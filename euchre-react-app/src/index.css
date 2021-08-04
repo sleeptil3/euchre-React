@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* @layer components {
+  .placeholder {
+    @apply border text-white flex justify-center items-center border-green-200 h-48 w-48;
+  }
+} */
