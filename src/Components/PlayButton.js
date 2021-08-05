@@ -3,12 +3,15 @@ import { DataContext } from '../Pages/Game';
 import { sleep } from '../Data/data';
 
 export default function PlayButton() {
-	const { matchStage, setMatchStage, setNewGame } = useContext(DataContext)
+	const { setMatchStage, pass, setTurnCount } = useContext(DataContext)
 	const [opacity, setOpacity] = useState("opacity-100")
 
 	const handleClick = () => {
 		setOpacity("opacity-0")
-		sleep(1500).then(() => setMatchStage("DEAL"));
+		sleep(1500).then(() => {
+			setMatchStage("CALL")
+			setTurnCount(0)
+		});
 	};
 
 	return (

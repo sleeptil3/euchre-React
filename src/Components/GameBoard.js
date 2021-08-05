@@ -2,13 +2,16 @@ import { useContext } from 'react';
 import { DataContext } from '../Pages/Game';
 import GameLayer from "./GameLayer"
 import PlayButton from './PlayButton';
+import TempEnd from "../Components/TempEnd";
 
 export default function GameBoard() {
-	const { matchStage } = useContext(DataContext)
+	const { matchStage, showEnd } = useContext(DataContext)
 
 	return (
 		<div className="bg-game-canvas bg-no-repeat bg-center h-canvas w-canvas relative z-0">
-			{matchStage === "NEW" ? <PlayButton /> : <GameLayer />}
+			{matchStage === "NEW" ? <PlayButton />
+				: showEnd === true ? <TempEnd />
+					: <GameLayer />}
 		</div>
 	)
 }

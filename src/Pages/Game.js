@@ -5,8 +5,11 @@ import Header from "../Components/Header";
 import { sleep } from "../Data/data";
 
 export default function Game() {
-	// State
-	const [deck, setDeck] = useState([]);
+
+	////////////////
+	// GAME STATE //
+	////////////////
+
 	const [playerHand, setPlayerHand] = useState([]);
 	const [teammateHand, setTeammateHand] = useState([]);
 	const [opponentHand1, setOpponentHand1] = useState([]);
@@ -22,9 +25,12 @@ export default function Game() {
 	const [currentPrompt, setCurrentPrompt] = useState(0)
 	const [dealer, setDealer] = useState(0); // 0, 1, 2, 3
 	const [currentPlayer, setCurrentPlayer] = useState(dealer + 1); // 0, 1, 2, 3, 4 (result)
-	const [turnCount, setTurnCount] = useState(0)
+	const [turnCount, setTurnCount] = useState(-1)
 	const [yourSeat, setYourSeat] = useState(0)
 	const nonPlayerHands = [opponentHand1, teammateHand, opponentHand2]
+
+	const [showEnd, setShowEnd] = useState(false)
+
 	const suits = {
 		"h": {
 			name: "Hearts",
@@ -32,6 +38,7 @@ export default function Game() {
 			select() {
 				setTrump(this)
 				setMatchStage("TRUMP")
+				setTurnCount(turnCount + 1)
 			}
 		},
 		"d": {
@@ -40,6 +47,7 @@ export default function Game() {
 			select() {
 				setTrump(this)
 				setMatchStage("TRUMP")
+				setTurnCount(turnCount + 1)
 			}
 		},
 		"s": {
@@ -48,6 +56,7 @@ export default function Game() {
 			select() {
 				setTrump(this)
 				setMatchStage("TRUMP")
+				setTurnCount(turnCount + 1)
 			}
 		},
 		"c": {
@@ -56,9 +65,17 @@ export default function Game() {
 			select() {
 				setTrump(this)
 				setMatchStage("TRUMP")
+				setTurnCount(turnCount + 1)
 			}
 		}
 	}
+
+
+
+	////////////////
+	// PROMPT MAP //
+	////////////////
+
 	const prompts = {
 		trump1Round: {
 			title: "Trump Selection Round 1",
@@ -111,21 +128,23 @@ export default function Game() {
 			choices: []
 		},
 		matchResult: {
-			title: "Trump Suit Chosen",
-			question: `It is ${trump.name}`,
-			choices: [{ text: "Begin Match", action: () => startMatch() }]
+			title: "",
+			question: ``,
+			choices: []
 		},
 		gameOver: {
-			title: "Trump Suit Chosen",
-			question: `It is ${trump.name}`,
-			choices: [{ text: "Begin Match", action: () => startMatch() }]
+			title: "",
+			question: ``,
+			choices: []
 		},
-		// inTheBarn: {
-
-		// }
+		// inTheBarn: {}
 	}
 
-	// Functions
+
+
+	///////////////////////
+	// General Functions //
+	///////////////////////
 
 	const pass = () => {
 		setCurrentPlayer((currentPlayer + 1) % 4)
@@ -142,20 +161,15 @@ export default function Game() {
 		try {
 			const response = await fetch(BASE_URI + "deck")
 			const data = await response.json()
-			setDeck([...data.deck])
+			setPlayerHand([...data.deck.slice(0, 5)])
+			setTeammateHand([...data.deck.slice(5, 10)])
+			setOpponentHand1([...data.deck.slice(10, 15)])
+			setOpponentHand2([...data.deck.slice(15, 20)])
+			setUpTrump(data.deck[20])
 		} catch (error) {
 			console.error(error)
 		}
 	};
-
-	const dealCards = () => {
-		setPlayerHand(sortHand([...deck.slice(0, 5)]))
-		setTeammateHand([...deck.slice(5, 10)])
-		setOpponentHand1([...deck.slice(10, 15)])
-		setOpponentHand2([...deck.slice(15, 20)])
-		setUpTrump(deck[20])
-		setMatchStage("CALL")
-	}
 
 	const sortHand = (hand) => {
 		const suitMap = groupBySuit(hand)
@@ -169,7 +183,7 @@ export default function Game() {
 
 	const groupBySuit = (cards) => {
 		return cards.reduce(function (acc, card) {
-			let key = card.suit.name
+			let key = card.suit.right.name
 			if (!acc[key]) {
 				acc[key] = []
 			}
@@ -182,23 +196,62 @@ export default function Game() {
 		// Code
 	}
 
-	// AI & Scoring
-	const decideCallUp = (hand) => {
-		const suitMap = groupBySuit(hand)
-		console.log(suitMap)
-		if (upTrump.suit.name in suitMap) {
-			console.log("in suitmap")
+
+	//////////////
+	// AI LOGIC //
+	//////////////
+
+	const scoreHand = (hand, trump, left) => {
+		// trump = "Hearts"
+		// left = "Diamonds"
+		let score = 0
+		for (const card of hand) {
+			score += card.value
+			if (card.suit.right.name === trump) {
+				score += 10
+				if (card.faceValue === "J") {
+					score += 30
+				}
+			}
+			if (card.suit.right.name === left && card.faceValue === "J") {
+				score += 20
+			}
 		}
-		// else {
-		sleep(4000).then(() => {
-			setCurrentPlayer((currentPlayer + 1) % 4)
-			setTurnCount(turnCount + 1)
-		})
-		// }
+		return score
 	}
 
-	const decideTrumpSelect = (hand) => {
-		// If STUCK, no pass
+	const decideTrump = async (hand) => {
+		console.log("decideTrump: start", currentPlayer)
+		const suitMap = await groupBySuit(hand)
+		const trump = upTrump.suit.right.name
+		const left = upTrump.suit.left.name
+		console.log("TRUMP:", trump)
+		console.log(suitMap)
+		switch (matchStage) {
+			case "CALL": {
+				sleep(500).then(() => {
+					if (trump in suitMap) {
+						console.log("decideTrump: have trump suit in hand")
+						const scoredHand = scoreHand(hand, trump, left)
+						console.log(scoredHand)
+					} else {
+						console.log("decideTrump: pass")
+					}
+					console.log("decideTrump: end")
+					pass()
+				})
+			}
+
+			case "PICK": {
+
+			}
+			case "STUCK": {
+
+			}
+			default: console.log("decideTrump AI called on invalid match stage.")
+		}
+		// else {
+		// }
 	}
 
 	const decidePlay = (hand, match) => {
@@ -210,29 +263,65 @@ export default function Game() {
 	}
 
 
-	// Effects
+	////////////////
+	// useEffects //
+	////////////////
 
-	// Prompt Management
+	// Game Setup
+	useEffect(() => {
+		console.log("Game Initialized: Getting Deck and setting up hands")
+		getDeck()
+		sortHand(playerHand)
+	}, [dealer])
+
+	// Game Logic
 	useEffect(() => {
 		switch (matchStage) {
 			case "CALL": {
 				console.log("Prompt Management Call Stage")
-				currentPlayer === yourSeat ? setPromptText(prompts.trump1Turn) // OPTION TO CALL IT UP
-					: setPromptText(prompts.trump1Round) // AWAITING TURN TO CALL IT UP
+				if (turnCount > 3) {
+					setMatchStage("PICK")
+					setCurrentPlayer((dealer + 1) % 4)
+					setTurnCount(0)
+				} else {
+					if (currentPlayer === yourSeat) {
+						setPromptText(prompts.trump1Turn) // OPTION TO CALL IT UP
+					} else {
+						setPromptText(prompts.trump1Round) // AWAITING TURN TO CALL IT UP
+						decideTrump(nonPlayerHands[currentPlayer - 1])
+					}
+				}
 				break
 			}
 			case "PICK": {
+				setShowEnd(true)
+				break
 				console.log("Prompt Management Pick Stage")
-				currentPlayer === yourSeat ? setPromptText(prompts.trump2Turn) // AWAITING TURN TO DECLARE IT
-					: setPromptText(prompts.trump2Round) // OPTION TO DECLARE IT
+				if (turnCount > 3) {
+					setMatchStage("STUCK")
+					setCurrentPlayer((dealer + 1) % 4)
+					setTurnCount(0)
+				} else {
+					currentPlayer === yourSeat ? setPromptText(prompts.trump2Turn) // AWAITING TURN TO DECLARE IT
+						: setPromptText(prompts.trump2Round) // OPTION TO DECLARE IT
+					setCurrentPlayer((dealer + 1) % 4)
+					setTurnCount(turnCount + 1)
+				}
 				break
 			}
 			case "STUCK": {
-				dealer === yourSeat ? setPromptText(prompts.trump2Stuck) // STUCK TO DEALER YOU
-					: setPromptText(prompts.trump2StuckOther) // STUCK TO DEALER OTHER PLAYER
+				setShowEnd(true)
+				break
+				if (dealer === yourSeat) {
+					setPromptText(prompts.trump2Stuck) // STUCK TO DEALER YOU
+				} else {
+					setPromptText(prompts.trump2StuckOther) // STUCK TO DEALER OTHER PLAYER
+				}
 				break
 			}
 			case "TRUMP": {
+				setShowEnd(true)
+				break
 				console.log("Prompt Management TRUMP Stage")
 				setPromptText(prompts.trumpSelected)
 				break
@@ -251,87 +340,16 @@ export default function Game() {
 			}
 			default: console.log("Prompt Management Default Case")
 		}
-	}, [matchStage, currentPlayer]);
+	}, [turnCount]);
 
-	// Turn Count Resetter
-	useEffect(() => {
-		switch (matchStage) {
-			case "CALL": {
-				console.log("Turn Management Call Stage")
-				if (turnCount > 3) {
-					setTurnCount(0)
-					setMatchStage("PICK") // Resets counter to 0 after a full go around the table and sets stage to PICK
-				}
-				break
-			}
-			case "PICK": {
-				console.log("Turn Management Pick Stage")
-				if (turnCount > 3) {
-					setTurnCount(0)
-					setMatchStage("STUCK")
-				}
-				break
-			}
-			case "STUCK": {
-				console.log("Turn Management STUCK Stage")
-				setTurnCount(0)
-				break
-			}
-			case "TRUMP": {
-				console.log("Turn Management TRUMP Stage")
-				setTurnCount(0)
-				break
-			}
-			case "RESULT": {
-				console.log("Turn Management RESULT Stage")
-				setTurnCount(0)
-				break
-			}
-			case "GAMEOVER": {
-				console.log("Turn Management GAMEOVER Stage")
-				setTurnCount(0)
-				break
-			}
-			default: console.log("Turn Management Default Case")
-		}
-	}, [turnCount])
+	console.log("LOG: ", matchStage, currentPlayer, turnCount)
 
-	// Handle AI
-
-	useEffect(() => {
-		if (currentPlayer !== yourSeat) {
-			console.log("AI Debug: currentPlayer, turnCount, yourSeat", currentPlayer, turnCount, yourSeat)
-			switch (matchStage) {
-				case "CALL": {
-					console.log(`AI Call Stage for ${currentPlayer}`)
-					decideCallUp(nonPlayerHands[currentPlayer - 1])
-					break
-				}
-				case "PICK": console.log("PICK STAGE"); break;
-				case "STUCK": console.log("STUCK STAGE"); break;
-				case "PLAY": console.log("PLAY STAGE"); break;
-				default: console.log("Turn does not require AI")
-			}
-		}
-	}, [currentPlayer, matchStage])
-
-	// Handle matchStage Changes
-	useEffect(() => {
-		switch (matchStage) {
-			case "NEW": console.log("NEW STAGE"); getDeck(); break;
-			case "DEAL": console.log("DEAL STAGE"); dealCards(); break;
-			case "PICK": console.log("PICK STAGE"); break;
-			case "TRUMP": console.log("TRUMP STAGE"); break;
-			case "STUCK": console.log("STUCK STAGE"); break;
-			case "PLAY": console.log("PLAY STAGE"); break;
-			case "RESULT": console.log("RESULT STAGE"); break;
-			case "GAMEOVER": console.log("GAMEOVER STAGE"); break;
-			default: console.log("MatchStage Action not needed")
-		}
-	}, [matchStage]);
+	////////////
+	// RENDER //
+	////////////
 
 	return (
-		<DataContext.Provider value={{ goAlone, yourSeat, turnCount, setTurnCount, callingTeam, setCallingTeam, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
+		<DataContext.Provider value={{ showEnd, pass, goAlone, yourSeat, turnCount, setTurnCount, callingTeam, setCallingTeam, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
 			<div className="h-screen bg-gray-800 flex flex-col justify-start items-center">
 				<Header />
 				<div className="h-full w-full flex justify-center items-center">

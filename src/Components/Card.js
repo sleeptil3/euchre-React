@@ -1,7 +1,7 @@
 
 
 export default function Card({ card }) {
-	const cardCode = "" + card.suit.name[0].toLowerCase() + card.faceValue.toLowerCase()
+	const cardCode = "" + card.suit.right.code + card.faceValue.toLowerCase()
 
 	return (
 		<div onClick={null} className="cursor relative w-24 transform transition-transform delay-75 duration-400 hover:-translate-y-5">

@@ -3,7 +3,7 @@ import { useContext, useEffect, useState } from "react"
 import { DataContext } from "../Pages/Game"
 
 export default function Card() {
-	const { upTrump, setTrump, currentPlayer, setMatchStage, setCurrentPlayer, dealer, setCallingTeam } = useContext(DataContext)
+	const { matchStage, turnCount, yourSeat, upTrump, setTrump, currentPlayer, setMatchStage, setCurrentPlayer, dealer, setCallingTeam } = useContext(DataContext)
 	const [cardCode, setCardCode] = useState("")
 	const [enableSelection, setEnableSelection] = useState("pointer-events-none")
 
@@ -16,12 +16,12 @@ export default function Card() {
 	}
 
 	useEffect(() => {
-		setCardCode("" + upTrump.suit.name[0].toLowerCase() + upTrump.faceValue.toLowerCase())
+		setCardCode("" + upTrump.suit.right.code + upTrump.faceValue.toLowerCase())
 	}, [upTrump])
 
 	useEffect(() => {
-		currentPlayer === 0 ? setEnableSelection("pointer-events-auto") : setEnableSelection("pointer-events-none")
-	}, [upTrump])
+		currentPlayer === yourSeat && matchStage === "CALL" ? setEnableSelection("pointer-events-auto") : setEnableSelection("pointer-events-none")
+	}, [turnCount])
 
 	return (
 		<div onClick={handleClick} className={`${enableSelection} relative z-20 cursor-pointer w-24 transform transition-transform delay-75 duration-400 hover:-translate-y-5`}>

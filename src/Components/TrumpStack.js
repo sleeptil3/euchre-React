@@ -6,8 +6,6 @@ import downDeck from "../images/deck.png"
 export default function TrumpStack() {
 	const { trump, upTrump } = useContext(DataContext)
 
-	// if (matchStage === "CALL" || matchStage === "PICK") {
-
 	if (!trump.suit) {
 		return (
 			<div>
