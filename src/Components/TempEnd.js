@@ -22,6 +22,13 @@ export default function TempEnd() {
 				<a className="font-light hover:underline" href="https://github.com/sleeptil3/euchre-api" target="_blank" rel="noopener noreferrer">Back End API</a>
 				<a className="font-light hover:underline" href="https://github.com/sleeptil3/euchre-React" target="_blank" rel="noopener noreferrer">Front End React</a>
 			</div>
+			<div className="text-white flex space-x-5 text-opacity-80 text-lg font-extralight pb-10">
+				<h2>
+					Take a look at my extensive pre-visualization process:
+				</h2>
+				<a className="font-light hover:underline" href="https://www.figma.com/file/Oe1LIvWV7E8X5QdlW6T5Cv/EuchreGame?node-id=0%3A1" target="_blank" rel="noopener noreferrer">Figma Boards</a>
+				<a className="font-light hover:underline" href="https://drive.google.com/open?id=1njK0KpMedu_ym5I-YkUKfG5L5quywbgo" target="_blank" rel="noopener noreferrer">Database Design</a>
+			</div>
 			<button
 				onClick={handleClick}
 				className="transform transition-transform duration-500 hover:scale-110 active:scale-100 cursor-pointer text-white font-thin text-opacity-90 border-2 bg-white bg-opacity-10 border-white border-opacity-80 h-10 w-28">
