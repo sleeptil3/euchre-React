@@ -26,7 +26,7 @@ export default function TempEnd() {
 				<h2>
 					Take a look at my extensive pre-visualization process:
 				</h2>
-				<a className="font-light hover:underline" href="https://www.figma.com/file/Oe1LIvWV7E8X5QdlW6T5Cv/EuchreGame?node-id=0%3A1" target="_blank" rel="noopener noreferrer">Figma Boards</a>
+				<a className="font-light hover:underline" href="https://www.figma.com/file/Oe1LIvWV7E8X5QdlW6T5Cv/EuchreGame?node-id=2%3A508" target="_blank" rel="noopener noreferrer">Figma Boards</a>
 				<a className="font-light hover:underline" href="https://drive.google.com/open?id=1njK0KpMedu_ym5I-YkUKfG5L5quywbgo" target="_blank" rel="noopener noreferrer">Database Design</a>
 			</div>
 			<button
