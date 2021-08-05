@@ -9,7 +9,17 @@ module.exports = {
 	},
 	darkMode: false, // or 'media' or 'class'
 	theme: {
-		extend: {},
+		extend: {
+			backgroundImage: theme => ({
+				'game-canvas': "url('/src/images/bg-board.png')"
+			}),
+			height: {
+				"canvas": "720px",
+			},
+			width: {
+				"canvas": "1280px",
+			}
+		},
 	},
 	variants: {
 		extend: {},

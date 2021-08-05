@@ -1,20 +1,14 @@
 import { useContext } from 'react';
 import { DataContext } from '../Pages/Game';
-import Background from "./Background"
 import GameLayer from "./GameLayer"
 import PlayButton from './PlayButton';
 
-
-// PRE, DEAL, CALL, PICK, PLAY
-
 export default function GameBoard() {
-	const { newGame, matchStage } = useContext(DataContext)
+	const { matchStage } = useContext(DataContext)
 
 	return (
-		<div className="relative mx-auto">
-			<PlayButton />
-			<GameLayer />
-			<Background />
+		<div className="bg-game-canvas bg-no-repeat bg-center h-canvas w-canvas relative z-0">
+			{matchStage === "NEW" ? <PlayButton /> : <GameLayer />}
 		</div>
 	)
 }
