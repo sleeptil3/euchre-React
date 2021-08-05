@@ -229,7 +229,7 @@ export default function Game() {
 		console.log(suitMap)
 		switch (matchStage) {
 			case "CALL": {
-				sleep(500).then(() => {
+				sleep(2000).then(() => {
 					if (trump in suitMap) {
 						console.log("decideTrump: have trump suit in hand")
 						const scoredHand = scoreHand(hand, trump, left)

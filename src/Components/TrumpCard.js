@@ -3,7 +3,7 @@ import { useContext, useEffect, useState } from "react"
 import { DataContext } from "../Pages/Game"
 
 export default function Card() {
-	const { matchStage, turnCount, yourSeat, upTrump, setTrump, currentPlayer, setMatchStage, setCurrentPlayer, dealer, setCallingTeam } = useContext(DataContext)
+	const { matchStage, turnCount, setTurnCount, yourSeat, upTrump, setTrump, currentPlayer, setMatchStage, setCurrentPlayer, dealer, setCallingTeam } = useContext(DataContext)
 	const [cardCode, setCardCode] = useState("")
 	const [enableSelection, setEnableSelection] = useState("pointer-events-none")
 
@@ -13,6 +13,7 @@ export default function Card() {
 		setCallingTeam(currentPlayer)
 		setCurrentPlayer(dealer + 1)
 		setMatchStage("TRUMP")
+		setTurnCount(0)
 	}
 
 	useEffect(() => {
