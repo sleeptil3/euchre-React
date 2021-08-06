@@ -3,17 +3,13 @@ import { useContext, useEffect, useState } from "react"
 import { DataContext } from "../Pages/Game"
 
 export default function Card() {
-	const { matchStage, turnCount, setTurnCount, yourSeat, upTrump, setTrump, currentPlayer, setMatchStage, setCurrentPlayer, dealer, setCallingTeam } = useContext(DataContext)
+	const { suits, matchStage, turnCount, yourSeat, upTrump, currentPlayer } = useContext(DataContext)
 	const [cardCode, setCardCode] = useState("")
 	const [enableSelection, setEnableSelection] = useState("pointer-events-none")
 
 	const handleClick = () => {
-		console.log(`Player${currentPlayer} ordered up ${upTrump.faceValue} of ${upTrump.suit.name} as trump`)
-		setTrump(upTrump)
-		setCallingTeam(currentPlayer)
-		setCurrentPlayer(dealer + 1)
-		setMatchStage("TRUMP")
-		setTurnCount(0)
+		console.log(`You ordered up ${upTrump.faceValue} of ${upTrump.suit.right.name} as trump`)
+		suits[upTrump.suit.right.code].select()
 	}
 
 	useEffect(() => {

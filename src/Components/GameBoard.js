@@ -9,9 +9,7 @@ export default function GameBoard() {
 
 	return (
 		<div className="bg-game-canvas bg-no-repeat bg-center h-canvas w-canvas relative z-0">
-			{matchStage === "NEW" ? <PlayButton />
-				: showEnd === true ? <TempEnd />
-					: <GameLayer />}
+			{matchStage === "NEW" ? <PlayButton /> : <GameLayer />}
 		</div>
 	)
 }

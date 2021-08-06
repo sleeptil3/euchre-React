@@ -16,7 +16,7 @@ export default function Game() {
 	const [opponentHand2, setOpponentHand2] = useState([]);
 	const [upTrump, setUpTrump] = useState({})
 	const [trump, setTrump] = useState({}); // {suit, left}
-	const [callingTeam, setCallingTeam] = useState(null)
+	const [callingPlayer, setCallingPlayer] = useState(null)
 	const [teamScore, setTeamScore] = useState(0);
 	const [opponentScore, setOpponentScore] = useState(0);
 	const [matchStage, setMatchStage] = useState("NEW"); // NEW, DEAL, CALL, PICK, PLAY
@@ -27,45 +27,40 @@ export default function Game() {
 	const [currentPlayer, setCurrentPlayer] = useState(dealer + 1); // 0, 1, 2, 3, 4 (result)
 	const [turnCount, setTurnCount] = useState(-1)
 	const [yourSeat, setYourSeat] = useState(0)
-	const nonPlayerHands = [opponentHand1, teammateHand, opponentHand2]
 
-	const [showEnd, setShowEnd] = useState(false)
+	const nonPlayerHands = [opponentHand1, teammateHand, opponentHand2]
 
 	const suits = {
 		"h": {
 			name: "Hearts",
-			left: "d",
+			code: "h",
+			left: { code: "d", name: "Diamonds" },
 			select() {
-				setTrump(this)
-				setMatchStage("TRUMP")
-				setTurnCount(turnCount + 1)
+				handleCallUp(this)
 			}
 		},
 		"d": {
 			name: "Diamonds",
-			left: "h",
+			code: "d",
+			left: { code: "h", name: "Hearts" },
 			select() {
-				setTrump(this)
-				setMatchStage("TRUMP")
-				setTurnCount(turnCount + 1)
+				handleCallUp(this)
 			}
 		},
 		"s": {
 			name: "Spades",
-			left: "c",
+			code: "s",
+			left: { code: "c", name: "Clubs" },
 			select() {
-				setTrump(this)
-				setMatchStage("TRUMP")
-				setTurnCount(turnCount + 1)
+				handleCallUp(this)
 			}
 		},
 		"c": {
 			name: "Clubs",
-			left: "s",
+			code: "c",
+			left: { code: "s", name: "Spades" },
 			select() {
-				setTrump(this)
-				setMatchStage("TRUMP")
-				setTurnCount(turnCount + 1)
+				handleCallUp(this)
 			}
 		}
 	}
@@ -113,7 +108,7 @@ export default function Game() {
 			choices: []
 		},
 		trumpSelected: {
-			title: "Trump Suit Chosen",
+			title: `${callingPlayer % 2 === 0 ? "Your Team Called Trump" : "The Other Team Called Trump"}`,
 			question: `It is ${trump.name}`,
 			choices: [{ text: "Begin Match", action: () => startMatch() }]
 		},
@@ -192,18 +187,19 @@ export default function Game() {
 		}, {})
 	}
 
+	const handleCallUp = (trump) => {
+		setTrump(trump)
+		setCallingPlayer(currentPlayer)
+		setCurrentPlayer(dealer)
+		setMatchStage("TRUMP")
+		setTurnCount(turnCount + 1)
+	}
+
 	const goAlone = () => {
 		// Code
 	}
 
-
-	//////////////
-	// AI LOGIC //
-	//////////////
-
 	const scoreHand = (hand, trump, left) => {
-		// trump = "Hearts"
-		// left = "Diamonds"
 		let score = 0
 		for (const card of hand) {
 			score += card.value
@@ -220,26 +216,50 @@ export default function Game() {
 		return score
 	}
 
-	const decideTrump = async (hand) => {
-		console.log("decideTrump: start", currentPlayer)
-		const suitMap = await groupBySuit(hand)
+	const findHighestOffSuit = (suitMap, trump) => {
+
+	}
+
+	const findIsTeammate = (currentPlayer, dealer) => {
+		if ((currentPlayer + 2) % 4 === dealer) return true
+		else return false
+	}
+
+
+
+	//////////////
+	// AI LOGIC //
+	//////////////
+
+
+	const decideTrump = (hand) => {
+		console.log("decideTrump: start = Player ", currentPlayer)
+		const suitMap = groupBySuit(hand)
 		const trump = upTrump.suit.right.name
 		const left = upTrump.suit.left.name
 		console.log("TRUMP:", trump)
 		console.log(suitMap)
 		switch (matchStage) {
 			case "CALL": {
-				sleep(2000).then(() => {
+				sleep(1000).then(() => {
 					if (trump in suitMap) {
-						console.log("decideTrump: have trump suit in hand")
-						const scoredHand = scoreHand(hand, trump, left)
-						console.log(scoredHand)
-					} else {
-						console.log("decideTrump: pass")
-					}
-					console.log("decideTrump: end")
-					pass()
+						console.log(`decideTrump(CALL): Player ${currentPlayer} trump suit in hand`)
+						const handScore = scoreHand(hand, trump, left)
+						let enhancedScore = handScore
+						const dealerIsTeammate = findIsTeammate(currentPlayer, dealer)
+						if (dealerIsTeammate) {
+							enhancedScore += upTrump.value + 10
+							if (upTrump.faceValue === "J") enhancedScore += 30
+						} else {
+							enhancedScore -= upTrump.value + 10
+							if (upTrump.faceValue === "J") enhancedScore -= 30
+						}
+						console.log(`decideTrump(CALL): Player ${currentPlayer} enhancedScore is ${enhancedScore}`)
+						if (enhancedScore > 50) { console.log(`decideTrump(CALL): Player ${currentPlayer} ordered it up`); suits[upTrump.suit.right.code].select() }
+						else { console.log(`decideTrump(CALL): Player ${currentPlayer} passed`); pass() }
+					} else { console.log(`decideTrump(CALL): Player ${currentPlayer} passed`); pass() }
 				})
+				break
 			}
 
 			case "PICK": {
@@ -294,8 +314,6 @@ export default function Game() {
 				break
 			}
 			case "PICK": {
-				setShowEnd(true)
-				break
 				console.log("Prompt Management Pick Stage")
 				if (turnCount > 3) {
 					setMatchStage("STUCK")
@@ -310,8 +328,6 @@ export default function Game() {
 				break
 			}
 			case "STUCK": {
-				setShowEnd(true)
-				break
 				if (dealer === yourSeat) {
 					setPromptText(prompts.trump2Stuck) // STUCK TO DEALER YOU
 				} else {
@@ -320,8 +336,6 @@ export default function Game() {
 				break
 			}
 			case "TRUMP": {
-				setShowEnd(true)
-				break
 				console.log("Prompt Management TRUMP Stage")
 				setPromptText(prompts.trumpSelected)
 				break
@@ -342,14 +356,14 @@ export default function Game() {
 		}
 	}, [turnCount]);
 
-	console.log("LOG: ", matchStage, currentPlayer, turnCount)
+	console.log("LOG: (stage, cp, tc, pH, tH, oH1, oH2, uT, trump", matchStage, currentPlayer, turnCount, playerHand, teammateHand, opponentHand1, opponentHand2, upTrump, trump)
 
 	////////////
 	// RENDER //
 	////////////
 
 	return (
-		<DataContext.Provider value={{ showEnd, pass, goAlone, yourSeat, turnCount, setTurnCount, callingTeam, setCallingTeam, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
+		<DataContext.Provider value={{ pass, goAlone, yourSeat, turnCount, setTurnCount, callingPlayer, setCallingPlayer, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
 			<div className="h-screen bg-gray-800 flex flex-col justify-start items-center">
 				<Header />
 				<div className="h-full w-full flex justify-center items-center">
