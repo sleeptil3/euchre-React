@@ -2,7 +2,6 @@ import { useContext } from 'react';
 import { DataContext } from '../Pages/Game';
 import GameLayer from "./GameLayer"
 import PlayButton from './PlayButton';
-import TempEnd from "../Components/TempEnd";
 
 export default function GameBoard() {
 	const { matchStage, showEnd } = useContext(DataContext)
