@@ -1,7 +1,7 @@
 
 
-// export const BASE_URI = "https://euchre-api.herokuapp.com/api/"
-export const BASE_URI = "http://localhost:3033/api/"
+export const BASE_URI = "https://euchre-api.herokuapp.com/api/"
+// export const BASE_URI = "http://localhost:3033/api/"
 
 export function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
