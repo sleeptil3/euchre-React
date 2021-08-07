@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext } from "react";
+import { useState, useEffect, useLayoutEffect, createContext } from "react";
 import { BASE_URI } from "../Data/data";
 import GameBoard from "../Components/GameBoard";
 import Header from "../Components/Header";
@@ -23,12 +23,18 @@ export default function Game() {
 	const [showPrompt, setShowPrompt] = useState(false)
 	const [promptText, setPromptText] = useState({ title: "", question: "", choices: [] })
 	const [currentPrompt, setCurrentPrompt] = useState(0)
+	const [playedCards, setPlayedCards] = useState({
+		0: null,
+		1: null,
+		2: null,
+		3: null
+	})
 	const [dealer, setDealer] = useState(0); // 0, 1, 2, 3
 	const [currentPlayer, setCurrentPlayer] = useState(dealer + 1); // 0, 1, 2, 3, 4 (result)
 	const [turnCount, setTurnCount] = useState(-1)
 	const [yourSeat, setYourSeat] = useState(0)
 	const [trumpCardOpacity, setTrumpCardOpacity] = useState("opacity-0")
-
+	const [trumpCardPosition, setTrumpCardPosition] = useState("translate-y-0")
 
 	const nonPlayerHands = [opponentHand1, teammateHand, opponentHand2]
 
@@ -109,10 +115,15 @@ export default function Game() {
 			question: "...dealer is making their decision",
 			choices: []
 		},
-		trumpSelected: {
-			title: `${callingPlayer % 2 === 0 ? "Your Team Called Trump" : "The Other Team Called Trump"}`,
-			question: `It is ${trump.name}`,
+		ready: {
+			title: `Ready to Play`,
+			question: `${callingPlayer % 2 === 0 ? `Your team called ${trump.name}` : `The other team called ${trump.name}`}.`,
 			choices: [{ text: "Begin Match", action: () => startMatch() }]
+		},
+		discard: {
+			title: `${callingPlayer % 2 === 0 ? "Your Team Called Trump" : "The Other Team Called Trump"}`,
+			question: `Choose a card to discard`,
+			choices: []
 		},
 		yourTurn: {
 			title: "It's your turn",
@@ -120,7 +131,7 @@ export default function Game() {
 			choices: []
 		},
 		othersTurn: {
-			title: `${currentPlayer % 2 === 0 ? "Your Teammate is making their decision" : `Player ${currentPlayer} is making their decision`}`,
+			title: `${currentPlayer % 2 === 0 ? "It's your teammate's turn" : `It's Player ${currentPlayer}'s turn`}`,
 			question: "Please wait...",
 			choices: []
 		},
@@ -158,7 +169,7 @@ export default function Game() {
 		try {
 			const response = await fetch(BASE_URI + "deck")
 			const data = await response.json()
-			setPlayerHand([...data.deck.slice(0, 5)])
+			setPlayerHand(sortHand([...data.deck.slice(0, 5)]))
 			setTeammateHand([...data.deck.slice(5, 10)])
 			setOpponentHand1([...data.deck.slice(10, 15)])
 			setOpponentHand2([...data.deck.slice(15, 20)])
@@ -189,12 +200,26 @@ export default function Game() {
 		}, {})
 	}
 
-	const handleCallUp = (trump) => {
+	const handleCallUp = async (trump) => {
 		setTrump(trump)
+		setTrumpCardPosition("translate-y-20")
 		setCallingPlayer(currentPlayer)
 		setCurrentPlayer(dealer)
-		setMatchStage("TRUMP")
+		dealer === yourSeat ? setMatchStage("DISCARD") : setMatchStage("READY")
 		setTurnCount(turnCount + 1)
+		if (matchStage === "CALL") {
+			sleep(1000).then(() => {
+				switch (dealer) {
+					case 0: {
+						setPlayerHand([...playerHand, upTrump])
+						break
+					}
+					case 1: { setOpponentHand1([...opponentHand1, upTrump]); break; }
+					case 2: { setTeammateHand([...teammateHand, upTrump]); break; }
+					case 3: { setOpponentHand2([...opponentHand2, upTrump]); break; }
+				}
+			})
+		}
 	}
 
 	const goAlone = () => {
@@ -227,6 +252,56 @@ export default function Game() {
 		else return false
 	}
 
+	const handlePlayerChoice = (player, card) => {
+		// get player hand based on player
+		// run discard on hand based on choice
+		// set the played card to the chosen card
+		console.log("handlePlayerChoice", player, card)
+		setPlayedCards({ ...playedCards, [player]: opponentHand1[0] })
+		setCurrentPlayer((currentPlayer + 1) % 4)
+		setTurnCount(turnCount + 1)
+	}
+
+	const handleDiscard = (player, card) => {
+		console.log("handleDiscard", player, card)
+		let hand = []
+		switch (dealer) {
+			case 0: {
+				hand = [...playerHand]
+				swap(hand, hand.indexOf(card), 5)
+				hand.length = 5
+				setPlayerHand(sortHand([...hand]))
+				break
+			}
+			case 1: {
+				hand = [...opponentHand1]
+				swap(hand, hand.indexOf(card), 5)
+				hand.length = 5
+				setOpponentHand1([...hand])
+				break
+			}
+			case 2: {
+				hand = [...teammateHand]
+				swap(hand, hand.indexOf(card), 5)
+				hand.length = 5
+				setTeammateHand([...hand])
+				break
+			}
+			case 3: {
+				hand = [...opponentHand2]
+				swap(hand, hand.indexOf(card), 5)
+				hand.length = 5
+				setOpponentHand2([...hand])
+				break
+			}
+		}
+		matchStage !== "PLAY" && setMatchStage("READY")
+		setTurnCount(turnCount + 1)
+		function swap(arr, idx1, idx2) {
+			[arr[idx1], arr[idx2]] = [arr[idx2], arr[idx1]]
+		}
+	}
+
 
 
 	//////////////
@@ -237,7 +312,6 @@ export default function Game() {
 		if (trump in suitMap) {
 			console.log(`decideTrump(CALL): Player ${currentPlayer} trump suit in hand`)
 			const left = upTrump.suit.left.name
-
 			const handScore = scoreHand(hand, trump, left)
 			let enhancedScore = handScore
 			const dealerIsTeammate = findIsTeammate(currentPlayer, dealer)
@@ -287,7 +361,16 @@ export default function Game() {
 		}
 	}
 
-	const decidePlay = (hand, match) => {
+	const decidePlay = () => {
+		// get player hand based on player
+		// run discard on hand based on choice
+		// set the played card to the chosen card
+
+		sleep(1000).then(() => {
+			setPlayedCards({ ...playedCards, [currentPlayer]: opponentHand1[0] })
+			setCurrentPlayer((currentPlayer + 1) % 4)
+			setTurnCount(turnCount + 1)
+		})
 
 	}
 
@@ -301,14 +384,13 @@ export default function Game() {
 	////////////////
 
 	// Game Setup
-	useEffect(() => {
+	useLayoutEffect(() => {
 		console.log("Game Initialized: Getting Deck and setting up hands")
 		getDeck()
-		sortHand(playerHand)
 	}, [dealer])
 
 	// Game Logic
-	useEffect(() => {
+	useLayoutEffect(() => {
 		switch (matchStage) {
 			case "CALL": {
 				console.log("Prompt Management Call Stage")
@@ -341,8 +423,6 @@ export default function Game() {
 					} else {
 						setPromptText(prompts.trump2Round) // OPTION TO DECLARE IT
 						decideTrump(nonPlayerHands[currentPlayer - 1])
-						// setCurrentPlayer((dealer + 1) % 4)
-						// setTurnCount(turnCount + 1)
 					}
 					break
 				}
@@ -355,13 +435,24 @@ export default function Game() {
 				}
 				break
 			}
-			case "TRUMP": {
-				console.log("Prompt Management TRUMP Stage")
-				setPromptText(prompts.trumpSelected)
+			case "READY": {
+				console.log("Prompt Management READY Stage")
+				setPromptText(prompts.ready)
+				break
+			}
+			case "DISCARD": {
+				console.log("Prompt Management DISCARD Stage")
+				setPromptText(prompts.discard)
 				break
 			}
 			case "PLAY": {
 				console.log("Prompt Management Play Stage")
+				if (currentPlayer === yourSeat) {
+					setPromptText(prompts.yourTurn)
+				} else {
+					setPromptText(prompts.othersTurn)
+					decidePlay()
+				}
 				break
 			}
 			case "RESULT": {
@@ -383,7 +474,7 @@ export default function Game() {
 	////////////
 
 	return (
-		<DataContext.Provider value={{ trumpCardOpacity, setTrumpCardOpacity, pass, goAlone, yourSeat, turnCount, setTurnCount, callingPlayer, setCallingPlayer, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
+		<DataContext.Provider value={{ playedCards, setPlayedCards, handlePlayerChoice, handleDiscard, trumpCardPosition, setTrumpCardPosition, trumpCardOpacity, setTrumpCardOpacity, pass, goAlone, yourSeat, turnCount, setTurnCount, callingPlayer, setCallingPlayer, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
 			<div className="h-screen bg-gray-800 flex flex-col justify-start items-center">
 				<Header />
 				<div className="h-full w-full flex justify-center items-center">

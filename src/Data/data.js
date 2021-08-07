@@ -1,12 +1,11 @@
 
 
-export const BASE_URI = "https://euchre-api.herokuapp.com/api/"
-// export const BASE_URI = "http://localhost:3033/api/"
+// export const BASE_URI = "https://euchre-api.herokuapp.com/api/"
+export const BASE_URI = "http://localhost:3033/api/"
 
 export function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 // sleep(1500).then(() => setMatchStage("DEAL"));
 
 
@@ -36,32 +35,3 @@ export const spinner = <svg
 		fillOpacity="0.65"
 	/>
 </svg>
-
-// class Card {
-// 	static gameValues = {
-// 		"9": 1,
-// 		"10": 2,
-// 		"J": 3,
-// 		"Q": 4,
-// 		"K": 5,
-// 		"A": 6
-// 	}
-// 	constructor(faceValue, suitCode) {
-// 		this.faceValue = faceValue
-// 		this.suit = suits[suitCode]
-// 		this.value = this.gameValues[faceValue]
-// 	}
-// }
-
-// class Deck {
-// 	static faceValues = ["9", "10", "J", "Q", "K", "A"]
-// 	deck = []
-
-// 	generateDeck() {
-// 		for (const suit in this.suits) {
-// 			for (const faceValue of this.faceValues) {
-// 				this.deck.push(new Card(faceValue, suit))
-// 			}
-// 		}
-// 	}
-// }

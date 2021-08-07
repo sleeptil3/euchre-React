@@ -8,11 +8,11 @@ export default function PlayerHand() {
 	const [enableSelection, setEnableSelection] = useState("pointer-events-none")
 
 	useEffect(() => {
-		currentPlayer === yourSeat && matchStage === "PLAY" ? setEnableSelection("pointer-events-auto") : setEnableSelection("pointer-events-none")
+		currentPlayer === yourSeat && (matchStage === "PLAY" || matchStage === "DISCARD") ? setEnableSelection("pointer-events-auto") : setEnableSelection("pointer-events-none")
 	}, [turnCount])
 
 	return (
-		<div className={`${enableSelection} transition-transform duration-700 w-24 grid grid-cols-5 grid-rows-1 justify-items-center absolute bottom-10 left-1/2 transform -translate-x-1/2`}>
+		<div className={`${enableSelection} transition-transform duration-700 w-24 grid grid-cols-6 grid-rows-1 justify-items-center absolute bottom-10 left-1/2 transform -translate-x-1/2`}>
 			{
 				playerHand.map(card => {
 					return <Card card={card} key={uuid()} />
