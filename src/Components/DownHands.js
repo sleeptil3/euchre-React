@@ -4,6 +4,7 @@ import DownHand from "./DownHand"
 
 export default function DownHands() {
 	const { teammateHand, opponentHand1, opponentHand2 } = useContext(DataContext)
+
 	return (
 		<div className="">
 			<DownHand position={1} handLength={opponentHand1.length} />

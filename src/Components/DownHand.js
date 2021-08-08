@@ -11,7 +11,7 @@ import { spinner } from "../Data/data";
 export default function DownHand({ position, handLength }) {
 	const [image, setImage] = useState(0);
 	const { currentPlayer } = useContext(DataContext)
-	const imports = [noneDown, oneDown, twoDown, threeDown, fourDown, fiveDown];
+	const imageURLS = [noneDown, oneDown, twoDown, threeDown, fourDown, fiveDown];
 	const styles = [
 		"hidden",
 		"absolute left-28 top-40 transform rotate-90",
@@ -21,7 +21,7 @@ export default function DownHand({ position, handLength }) {
 	];
 
 	useEffect(() => {
-		setImage(imports[5]);
+		setImage(imageURLS[handLength]);
 	}, [handLength]);
 
 	return (

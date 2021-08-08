@@ -1,8 +1,7 @@
 import { useState, useEffect, useLayoutEffect, createContext } from "react";
-import { BASE_URI } from "../Data/data";
 import GameBoard from "../Components/GameBoard";
 import Header from "../Components/Header";
-import { sleep } from "../Data/data";
+import { sleep, blankCard, BASE_URI } from "../Data/data";
 
 export default function Game() {
 
@@ -24,10 +23,14 @@ export default function Game() {
 	const [promptText, setPromptText] = useState({ title: "", question: "", choices: [] })
 	const [currentPrompt, setCurrentPrompt] = useState(0)
 	const [playedCards, setPlayedCards] = useState({
-		0: null,
-		1: null,
-		2: null,
-		3: null
+		0: blankCard,
+		1: blankCard,
+		2: blankCard,
+		3: blankCard
+	})
+	const [matchTricks, setMatchTricks] = useState({
+		callingTeam: 0,
+		opposingTeam: 0
 	})
 	const [dealer, setDealer] = useState(0); // 0, 1, 2, 3
 	const [currentPlayer, setCurrentPlayer] = useState(dealer + 1); // 0, 1, 2, 3, 4 (result)
@@ -35,7 +38,7 @@ export default function Game() {
 	const [yourSeat, setYourSeat] = useState(0)
 	const [trumpCardOpacity, setTrumpCardOpacity] = useState("opacity-0")
 	const [trumpCardPosition, setTrumpCardPosition] = useState("translate-y-0")
-
+	const [matchSuit, setMatchSuit] = useState(null)
 	const nonPlayerHands = [opponentHand1, teammateHand, opponentHand2]
 
 	const suits = {
@@ -190,7 +193,7 @@ export default function Game() {
 	}
 
 	const groupBySuit = (cards) => {
-		return cards.reduce(function (acc, card) {
+		return cards.reduce((acc, card) => {
 			let key = card.suit.name
 			if (!acc[key]) {
 				acc[key] = []
@@ -226,19 +229,24 @@ export default function Game() {
 		// Code
 	}
 
-	const scoreHand = (hand, trump, left) => {
+	const scoreHand = (hand, trump, leftSuit) => {
 		let score = 0
 		for (const card of hand) {
-			score += card.value
-			if (card.suit.name === trump) {
-				score += 10
-				if (card.faceValue === "J") {
-					score += 30
-				}
+			score += getCardScore(card, trump, leftSuit)
+		}
+		return score
+	}
+
+	const getCardScore = (card, trump, leftSuit) => {
+		let score = card.value
+		if (card.suit.name === trump) {
+			score += 10
+			if (card.faceValue === "J") {
+				score += 30
 			}
-			if (card.suit.name === left && card.faceValue === "J") {
-				score += 20
-			}
+		}
+		if (card.suit.name === leftSuit && card.faceValue === "J") {
+			score += 20
 		}
 		return score
 	}
@@ -247,50 +255,39 @@ export default function Game() {
 
 	}
 
-	const findIsTeammate = (currentPlayer, dealer) => {
-		if ((currentPlayer + 2) % 4 === dealer) return true
+	const findIsTeammate = (player1, player2) => {
+		if ((player1 + 2) % 4 === player2) return true
 		else return false
 	}
 
 	const handlePlayerChoice = (player, card) => {
-		// get player hand based on player
-		// run discard on hand based on choice
-		// set the played card to the chosen card
 		console.log("handlePlayerChoice", player, card)
-		setPlayedCards({ ...playedCards, [player]: opponentHand1[0] })
+		setPlayedCards({ ...playedCards, [player]: card })
 		setCurrentPlayer((currentPlayer + 1) % 4)
-		setTurnCount(turnCount + 1)
+		handleDiscard(player, card)
 	}
 
 	const handleDiscard = (player, card) => {
 		console.log("handleDiscard", player, card)
-		let hand = []
-		switch (dealer) {
+		const hand = getPlayerHand(player)
+		switch (player) {
 			case 0: {
-				hand = [...playerHand]
-				swap(hand, hand.indexOf(card), 5)
-				hand.length = 5
+				hand.splice(hand.indexOf(card), 1)
 				setPlayerHand(sortHand([...hand]))
 				break
 			}
 			case 1: {
-				hand = [...opponentHand1]
-				swap(hand, hand.indexOf(card), 5)
-				hand.length = 5
+				hand.splice(hand.indexOf(card), 1)
 				setOpponentHand1([...hand])
 				break
 			}
 			case 2: {
-				hand = [...teammateHand]
-				swap(hand, hand.indexOf(card), 5)
-				hand.length = 5
+				hand.splice(hand.indexOf(card), 1)
 				setTeammateHand([...hand])
 				break
 			}
 			case 3: {
-				hand = [...opponentHand2]
-				swap(hand, hand.indexOf(card), 5)
-				hand.length = 5
+				hand.splice(hand.indexOf(card), 1)
 				setOpponentHand2([...hand])
 				break
 			}
@@ -302,7 +299,30 @@ export default function Game() {
 		}
 	}
 
+	const getPlayerHand = (player) => {
+		switch (player) {
+			case 0: return [...playerHand]
+			case 1: return [...opponentHand1]
+			case 2: return [...teammateHand]
+			case 3: return [...opponentHand2]
+		}
+	}
 
+	const scoreMatch = () => {
+		let highScore = 0
+		let winner
+		const plays = [playedCards[0], playedCards[1], playedCards[2], playedCards[3]]
+		plays.forEach((play, idx) => {
+			if (play !== blankCard) {
+				const cardScore = getCardScore(play, trump.name, trump.left.name)
+				if (cardScore > highScore) {
+					highScore = cardScore
+					winner = idx
+				}
+			}
+		})
+		return { winner, highScore }
+	}
 
 	//////////////
 	// AI LOGIC //
@@ -328,10 +348,10 @@ export default function Game() {
 
 	const decideTrump = (hand) => {
 		const suitMap = groupBySuit(hand)
-
+		console.log(suitMap)
 		switch (matchStage) {
 			case "CALL": {
-				sleep(1000).then(() => {
+				sleep(10).then(() => {
 					const trump = upTrump.suit.name
 					const result = scoreHandByTrump(hand, suitMap, trump)
 					result > 50 ? suits[upTrump.suit.code].select() : pass()
@@ -340,7 +360,7 @@ export default function Game() {
 			}
 			case "PICK": {
 				console.log("decideTrump (PICK): PLAYER: ", currentPlayer)
-				sleep(1000).then(() => {
+				sleep(10).then(() => {
 					const heartsScore = [scoreHandByTrump(hand, suitMap, "Hearts"), 'h']
 					const diamondsScore = [scoreHandByTrump(hand, suitMap, "Diamonds"), 'd']
 					const clubsScore = [scoreHandByTrump(hand, suitMap, "Clubs"), 'c']
@@ -361,20 +381,157 @@ export default function Game() {
 		}
 	}
 
-	const decidePlay = () => {
-		// get player hand based on player
-		// run discard on hand based on choice
-		// set the played card to the chosen card
+	const decideAIplay = (player) => {
+		console.log("decideAIplay: BEGIN: currentPlayer: ", player, " turn count: ", turnCount)
+
+		const hand = [...getPlayerHand(player)]
+		const suitMap = groupBySuit(hand)
+		let chosenCard = null
+
+		if (!matchSuit) {
+			// if you are first player of match
+			console.log("decideAIplay: NO MATCH SUIT SET")
+			let highOffSuitValue = 0
+			let highOffSuitCard
+			for (const suit in suitMap) {
+				if (suit === trump.name) continue
+				for (const card of suitMap[suit]) {
+					if (card.value > highOffSuitValue) {
+						highOffSuitValue = card.value
+						highOffSuitCard = card
+					}
+				}
+			}
+			// if sufficient high offsuit card, set chosenCard
+			if (highOffSuitValue > 4) {
+				console.log("decideAIplay: sufficient high offsuit card")
+				chosenCard = highOffSuitCard
+			}
+			// if no sufficient high offsuit card
+			else if (suitMap.hasOwnProperty(trump.name)) {
+				console.log("decideAIplay: NO sufficient high offsuit card, but you have TRUMP suit")
+				// if you have trump and its the right (J), bring out the dead
+				const rightTrump = suitMap[trump.name].find(card => card.faceValue === "J")
+				chosenCard = rightTrump !== undefined ? rightTrump : null
+			}
+			if (!chosenCard) {
+				console.log("decideAIplay: NO high offsuit card, NO J of TRUMP suit, choosing highest offsuit")
+				chosenCard = highOffSuitCard
+			}
+		} else {
+			// not the first player, so play to matchSuit or Trump
+			console.log("decideAIplay: MATCH SUIT ALREADY SET")
+			const currentWinData = scoreMatch()
+			if (suitMap.hasOwnProperty(matchSuit)) {
+				console.log("decideAIplay: PLAYER HAS MATCH SUIT IN HAND")
+				if (findIsTeammate(currentWinData.winner, player)) {
+					// lay something low
+					console.log("decideAIplay: TEAMMATE IS WINNING, LAY LOW")
+					let lowCardValue = Infinity
+					let lowCard
+					for (const card of suitMap[matchSuit]) {
+						if (card.value < lowCardValue) {
+							lowCardValue = card.value
+							lowCard = card
+						}
+					}
+					chosenCard = lowCard
+				} else {
+					console.log("decideAIplay: TEAMMATE IS NOT WINNING, LAY HIGH IF YOU CAN BEAT IT")
+					// try to win
+					let highCardValue = currentWinData.highScore
+					let highCard
+					for (const card of suitMap[matchSuit]) {
+						if (card.value > highCardValue) {
+							highCardValue = card.value
+							highCard = card
+						}
+					}
+					chosenCard = highCard
+					// can't beat it, lay low offsuit
+					if (!chosenCard) {
+						let lowCardValue = Infinity
+						let lowCard
+						for (const suit in suitMap) {
+							if (suit === trump.name) continue
+							for (const card of suitMap[matchSuit]) {
+								if (card.value < lowCardValue) {
+									lowCardValue = card.value
+									lowCard = card
+								}
+							}
+						}
+						chosenCard = lowCard
+					}
+				}
+			} else {
+				console.log("decideAIplay: PLAYER DOES NOT HAVE MATCH SUIT IN HAND")
+				if (findIsTeammate(currentWinData.winner, player)) {
+					console.log("decideAIplay: TEAMMATE IS WINNING, LAY LOW OFF SUIT")
+					// if you have off trump, lay lowest
+					let lowCardValue = Infinity
+					let lowCard
+					for (const suit in suitMap) {
+						if (suit === trump.name) continue
+						for (const card of suitMap[suit]) {
+							if (card.value < lowCardValue) {
+								lowCardValue = card.value
+								lowCard = card
+							}
+						}
+					}
+					chosenCard = lowCard
+					// if you only have trump, lay lowest
+					if (!chosenCard) {
+						for (const card of suitMap[trump.name]) {
+							if (card.value < lowCardValue) {
+								lowCardValue = card.value
+								lowCard = card
+							}
+						}
+						chosenCard = lowCard
+					}
+				} else {
+					console.log("decideAIplay: TEAMMATE IS NOT WINNING, LAY LOWEST WINNING TRUMP TO WIN OR LOW OFFSUIT TO PASS")
+					let lowTrumpValue = Infinity
+					let lowTrumpCard = null
+					if (suitMap.hasOwnProperty(trump.name)) {
+						for (const trumpCard of suitMap[trump.name]) {
+							const scoredTrump = getCardScore(trumpCard, trump.name, trump.left.name)
+							if (scoredTrump > currentWinData.highScore) {
+								if (scoredTrump < lowTrumpValue) {
+									lowTrumpValue = scoredTrump
+									lowTrumpCard = trumpCard
+								}
+							}
+						}
+						chosenCard = lowTrumpCard
+					}
+					// didn't have any winning trump
+					if (!chosenCard) {
+						let lowestOffSuitValue = Infinity
+						let lowestOffSuitCard
+						for (const card of hand) {
+							if (card.suit.name === trump.name) continue
+							if (card.value < lowestOffSuitValue) {
+								lowestOffSuitValue = card.value
+								lowestOffSuitCard = card
+							}
+						}
+						chosenCard = lowestOffSuitCard
+					}
+				}
+			}
+		}
+
+		console.log("AI CHOSEN CARD + HAND", chosenCard, hand)
 
 		sleep(1000).then(() => {
-			setPlayedCards({ ...playedCards, [currentPlayer]: opponentHand1[0] })
-			setCurrentPlayer((currentPlayer + 1) % 4)
-			setTurnCount(turnCount + 1)
+			if (!matchSuit) setMatchSuit(chosenCard.suit.name)
+			setPlayedCards({ ...playedCards, [player]: chosenCard })
+			setCurrentPlayer((player + 1) % 4)
+			handleDiscard(player, chosenCard)
 		})
-
-	}
-
-	const scoreMatch = (match) => {
 
 	}
 
@@ -447,11 +604,22 @@ export default function Game() {
 			}
 			case "PLAY": {
 				console.log("Prompt Management Play Stage")
-				if (currentPlayer === yourSeat) {
-					setPromptText(prompts.yourTurn)
+				if (turnCount < 4) {
+					if (currentPlayer === yourSeat) {
+						setPromptText(prompts.yourTurn)
+					} else {
+						setPromptText(prompts.othersTurn)
+						decideAIplay(currentPlayer)
+					}
 				} else {
-					setPromptText(prompts.othersTurn)
-					decidePlay()
+					// handleMatchEnd
+					const matchScoreData = scoreMatch()
+					if (matchScoreData.winner === callingPlayer || findIsTeammate(matchScoreData.winner, callingPlayer)) {
+						setMatchTricks({ ...matchTricks, callingTeam: matchTricks.callingTeam++ })
+					} else {
+						setMatchTricks({ ...matchTricks, opposingTeam: matchTricks.opposingTeam++ })
+					}
+					console.log(matchTricks, matchScoreData, callingPlayer)
 				}
 				break
 			}

@@ -1,13 +1,25 @@
 
 
-// export const BASE_URI = "https://euchre-api.herokuapp.com/api/"
-export const BASE_URI = "http://localhost:3033/api/"
+export const BASE_URI = "https://euchre-api.herokuapp.com/api/"
+// export const BASE_URI = "http://localhost:3033/api/"
 
 export function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 // sleep(1500).then(() => setMatchStage("DEAL"));
 
+export const blankCard = {
+	faceValue: "0",
+	suit: {
+		code: "0",
+		name: "Blank",
+		left: {
+			code: "0",
+			name: "0"
+		}
+	},
+	value: 0
+}
 
 export const spinner = <svg
 	className="animate-spin"
