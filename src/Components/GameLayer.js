@@ -1,10 +1,12 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import DownHands from './DownHands';
 import PlayerHand from './PlayerHand';
 import Prompt from './Prompt';
 import TrumpStack from './TrumpStack';
 import PlayField from './PlayField';
-import TrumpIndicator from '../Components/TrumpIndicator'
+import TrumpIndicator from '../Components/TrumpIndicator';
+import CallingTeamIndicator from './CalllingTeamIndicator';
+import MatchTricksCount from './MatchTricksCount';
 import { DataContext } from '../Pages/Game';
 
 
@@ -21,6 +23,8 @@ export default function GameLayer() {
 				{matchStage === "PLAY" && <PlayField />}
 			</div>
 			{matchStage === "READY" || matchStage === "PLAY" && <TrumpIndicator trump={trump} />}
+			{matchStage === "PLAY" && <CallingTeamIndicator />}
+			{matchStage === "PLAY" && <MatchTricksCount />}
 		</div>
 	)
 }
