@@ -7,7 +7,7 @@ export default function Card({ card }) {
 	const cardCode = "" + card.suit.code + card.faceValue.toLowerCase()
 
 	const handleClick = () => {
-		matchStage === "DISCARD" ? handleDiscard(yourSeat, card) : handlePlayerChoice(yourSeat, card)
+		matchStage === "PLAY" ? handlePlayerChoice(yourSeat, card) : handleDiscard(yourSeat, card)
 	}
 
 	return (

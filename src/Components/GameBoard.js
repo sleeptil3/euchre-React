@@ -4,11 +4,11 @@ import GameLayer from "./GameLayer"
 import PlayButton from './PlayButton';
 
 export default function GameBoard() {
-	const { matchStage, showEnd } = useContext(DataContext)
+	const { matchStage } = useContext(DataContext)
 
 	return (
 		<div className="bg-game-canvas bg-no-repeat bg-center h-canvas w-canvas relative z-0">
-			{matchStage === "NEW" ? <PlayButton /> : <GameLayer />}
+			{matchStage === "NEWGAME" ? <PlayButton /> : <GameLayer />}
 		</div>
 	)
 }

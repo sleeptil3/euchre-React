@@ -3,11 +3,12 @@ import { DataContext } from '../Pages/Game';
 import { sleep } from '../Data/data';
 
 export default function PlayButton() {
-	const { setMatchStage, pass, setTurnCount } = useContext(DataContext)
+	const { setMatchStage, dealer, setCurrentPlayer, setTurnCount } = useContext(DataContext)
 	const [opacity, setOpacity] = useState("opacity-100")
 
 	const handleClick = () => {
 		setOpacity("opacity-0")
+		setCurrentPlayer((dealer + 1) % 4)
 		sleep(1500).then(() => {
 			setMatchStage("CALL")
 			setTurnCount(0)
@@ -17,7 +18,7 @@ export default function PlayButton() {
 	return (
 		<div className={`absolute top-0 bottom-0 left-0 right-0 z-10 transform transition-all duration-1000 ${opacity} backdrop-filter backdrop-blur-md flex flex-col justify-center items-center`}>
 			<h1 className="text-white text-opacity-80 text-xl font-bold">Let's play some Euchre<sup>*</sup></h1>
-			<h2 className="text-white text-opacity-80 text-md font-extralight"><sup>*</sup>Game is currently incomplete, uses debug level pacing, and works through first round of play. AI is hard. Stay tuned!</h2>
+			<h2 className="text-white text-opacity-80 text-md font-extralight"><sup>*</sup>Game is ALMOST complete. Right now, it uses debug level pacing, and works through the first match. AI is hard. Stay tuned!</h2>
 			<div className="mt-10 text-white flex space-x-5 text-opacity-80 text-lg font-extralight">
 				<h2>
 					Check out all that glorious code (so far):

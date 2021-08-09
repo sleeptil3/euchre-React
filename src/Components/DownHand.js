@@ -10,8 +10,8 @@ import { spinner } from "../Data/data";
 
 export default function DownHand({ position, handLength }) {
 	const [image, setImage] = useState(0);
-	const { currentPlayer } = useContext(DataContext)
-	const imageURLS = [noneDown, oneDown, twoDown, threeDown, fourDown, fiveDown];
+	const { currentPlayer, turnCount, matchStage } = useContext(DataContext)
+	const imageURLS = [noneDown, oneDown, twoDown, threeDown, fourDown, fiveDown, fiveDown];
 	const styles = [
 		"hidden",
 		"absolute left-28 top-40 transform rotate-90",
@@ -27,7 +27,7 @@ export default function DownHand({ position, handLength }) {
 	return (
 		<div className={styles[position]}>
 			<img src={image} alt={`Face down stack of ${handLength} cards`} />
-			{currentPlayer === position && <div className="flex justify-center items-center absolute top-0 left-0 right-0 bottom-0">{spinner}</div>}
+			{(currentPlayer === position && turnCount !== 4 && matchStage !== "RESULT") && <div className="flex justify-center items-center absolute top-0 left-0 right-0 bottom-0">{spinner}</div>}
 		</div>
 	)
 }

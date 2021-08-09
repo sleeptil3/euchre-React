@@ -4,7 +4,7 @@ import { DataContext } from "../Pages/Game"
 import { sleep } from "../Data/data"
 
 export default function Card() {
-	const { trumpCardPosition, setTrumpCardPosition, trumpCardOpacity, setTrumpCardOpacity, suits, matchStage, turnCount, yourSeat, upTrump, currentPlayer } = useContext(DataContext)
+	const { trumpCardPosition, setTrumpCardPosition, setTrumpStackOpacity, trumpCardOpacity, setTrumpCardOpacity, suits, matchStage, turnCount, yourSeat, upTrump, currentPlayer } = useContext(DataContext)
 	const [cardCode, setCardCode] = useState("")
 	const [enableSelection, setEnableSelection] = useState("pointer-events-none")
 
@@ -19,10 +19,15 @@ export default function Card() {
 
 	useEffect(() => {
 		if (matchStage === "CALL") {
-			setTrumpCardOpacity("opacity-100")
+			sleep(1000).then(() => setTrumpStackOpacity("opacity-100"))
+			sleep(1750).then(() => setTrumpCardOpacity("opacity-100"))
 			currentPlayer === yourSeat ? setEnableSelection("pointer-events-auto") : setEnableSelection("pointer-events-none")
 		} else {
-			sleep(500).then(() => setTrumpCardOpacity("opacity-0"))
+			sleep(500).then(() => setTrumpStackOpacity("opacity-0"))
+			sleep(2000).then(() => {
+				setTrumpCardPosition("translate-y-0")
+				setTrumpCardOpacity("opacity-0")
+			})
 		}
 	}, [turnCount])
 
