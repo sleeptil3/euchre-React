@@ -12,7 +12,7 @@ module.exports = {
 	theme: {
 		extend: {
 			backgroundImage: theme => ({
-				'game-canvas': "url('/src/images/bg-board.png')"
+				'game-canvas': "url('https://euchre.sleeptil3software.com/bg-board.png')"
 			}),
 			height: {
 				"canvas": "720px",
@@ -27,3 +27,5 @@ module.exports = {
 	},
 	plugins: [],
 }
+
+// url('../public/bg-board.png')

@@ -8,6 +8,54 @@ export function sleep(ms) {
 }
 // sleep(1500).then(() => setMatchStage("DEAL"));
 
+export const srcArray = [
+	"./bg-board.png",
+	"./cards/c9.png",
+	"./cards/c10.png",
+	"./cards/ca.png",
+	"./cards/cj.png",
+	"./cards/ck.png",
+	"./cards/cq.png",
+	"./cards/d9.png",
+	"./cards/d10.png",
+	"./cards/da.png",
+	"./cards/dj.png",
+	"./cards/dk.png",
+	"./cards/dq.png",
+	"./cards/h9.png",
+	"./cards/h10.png",
+	"./cards/ha.png",
+	"./cards/hj.png",
+	"./cards/hk.png",
+	"./cards/hq.png",
+	"./cards/s9.png",
+	"./cards/s10.png",
+	"./cards/sa.png",
+	"./cards/sj.png",
+	"./cards/sk.png",
+	"./cards/sq.png",
+	"./cards/down5.png",
+	"./cards/down4.png",
+	"./cards/down3.png",
+	"./cards/down2.png",
+	"./cards/down1.png",
+	"./cards/down0.png",
+	"./cards/deck.png",
+]
+export const cacheImages = async (srcArray) => {
+	const promises = await srcArray.map(src => {
+		return new Promise((resolve, reject) => {
+			const img = new Image()
+
+			img.src = src
+			img.onload = resolve()
+			img.onerror = reject()
+		})
+	})
+
+	await Promise.all(promises)
+}
+
 export const blankCard = {
 	faceValue: "0",
 	suit: {

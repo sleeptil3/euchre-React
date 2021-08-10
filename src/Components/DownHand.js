@@ -1,17 +1,11 @@
 import { useState, useLayoutEffect, useContext } from "react";
 import { DataContext } from "../Pages/Game";
-import fiveDown from "../images/down5.png";
-import fourDown from "../images/down4.png";
-import threeDown from "../images/down3.png";
-import twoDown from "../images/down2.png";
-import oneDown from "../images/down1.png";
-import noneDown from "../images/down0.png";
 import { spinner, dealerIcon } from "../Data/data";
 
 export default function DownHand({ position, handLength }) {
 	const [image, setImage] = useState(0);
 	const { currentPlayer, turnCount, matchStage, dealer } = useContext(DataContext)
-	const imageURLS = [noneDown, oneDown, twoDown, threeDown, fourDown, fiveDown, fiveDown];
+	const imageURLS = ["./cards/down0.png", "./cards/down1.png", "./cards/down2.png", "./cards/down3.png", "./cards/down4.png", "./cards/down5.png", "./cards/down5.png"]
 	const styles = [
 		"hidden",
 		"absolute left-28 top-40 transform rotate-90 flex justify-center items-center",
