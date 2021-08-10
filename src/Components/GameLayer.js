@@ -1,4 +1,4 @@
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import DownHands from './DownHands';
 import PlayerHand from './PlayerHand';
 import Prompt from './Prompt';
@@ -19,7 +19,7 @@ export default function GameLayer() {
 			<PlayerHand />
 			<DownHands />
 			<div className="h-full w-full flex justify-center items-center">
-				{(matchStage === "CALL" || matchStage === "PICK" || matchStage === "TRUMP" || matchStage === "DISCARD") ? <TrumpStack /> : null}
+				{(matchStage !== "PLAY" || matchStage !== "RESULT" || matchStage !== "GAMEOVER") ? <TrumpStack /> : null}
 				{matchStage === "PLAY" && <PlayField />}
 			</div>
 			{trump.code !== undefined && <TrumpIndicator />}

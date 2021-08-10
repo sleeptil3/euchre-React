@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from "react"
+import { useContext } from "react"
 import { DataContext } from "../Pages/Game"
 import TrumpCard from "./TrumpCard"
 import downDeck from "../images/deck.png"

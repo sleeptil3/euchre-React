@@ -3,28 +3,28 @@ import { DataContext } from '../Pages/Game';
 import { sleep } from '../Data/data';
 
 export default function PlayButton() {
-	const { setMatchStage, dealer, setCurrentPlayer, setTurnCount } = useContext(DataContext)
+	const { setMatchStage, turnCount, dealer, setCurrentPlayer, setTurnCount } = useContext(DataContext)
 	const [opacity, setOpacity] = useState("opacity-100")
 
 	const handleClick = () => {
 		setOpacity("opacity-0")
-		setCurrentPlayer((dealer + 1) % 4)
 		sleep(1500).then(() => {
-			setMatchStage("CALL")
-			setTurnCount(0)
+			setCurrentPlayer((dealer + 1) % 4)
+			setMatchStage("NEWGAME")
+			setTurnCount(turnCount - 1)
 		});
 	};
 
 	return (
 		<div className={`absolute top-0 bottom-0 left-0 right-0 z-10 transform transition-all duration-1000 ${opacity} backdrop-filter backdrop-blur-md flex flex-col justify-center items-center`}>
 			<h1 className="text-white text-opacity-80 text-xl font-bold">Let's play some Euchre<sup>*</sup></h1>
-			<h2 className="text-white text-opacity-80 text-md font-extralight"><sup>*</sup>Game is ALMOST complete. Right now, it uses debug level pacing, and works through the first match. AI is hard. Stay tuned!</h2>
+			<h2 className="text-white text-opacity-80 text-md font-extralight w-3/4 text-center"><sup>*</sup>Game is in beta testing and only supports desktop/laptop screens at the moment. Still fine tuning some AI and you <em>might</em> run into a bug here or there. It should be pretty smooth at this point though!</h2>
 			<div className="mt-10 text-white flex space-x-5 text-opacity-80 text-lg font-extralight">
 				<h2>
-					Check out all that glorious code (so far):
+					Check out the code:
 				</h2>
 				<a className="font-light hover:underline" href="https://github.com/sleeptil3/euchre-api" target="_blank" rel="noopener noreferrer">Back End API</a>
-				<a className="font-light hover:underline" href="https://github.com/sleeptil3/euchre-React" target="_blank" rel="noopener noreferrer">Front End React</a>
+				<a className="font-light hover:underline" href="https://github.com/sleeptil3/euchre-react" target="_blank" rel="noopener noreferrer">Front End React</a>
 			</div>
 			<div className="text-white flex space-x-5 text-opacity-80 text-lg font-extralight">
 				<h2>

@@ -1,5 +1,5 @@
 
-import { useContext, useEffect, useState } from "react"
+import { useContext, useLayoutEffect, useEffect, useState } from "react"
 import { DataContext } from "../Pages/Game"
 import { sleep } from "../Data/data"
 
@@ -19,17 +19,11 @@ export default function Card() {
 
 	useEffect(() => {
 		if (matchStage === "CALL") {
-			sleep(1000).then(() => setTrumpStackOpacity("opacity-100"))
-			sleep(1750).then(() => setTrumpCardOpacity("opacity-100"))
 			currentPlayer === yourSeat ? setEnableSelection("pointer-events-auto") : setEnableSelection("pointer-events-none")
 		} else {
-			sleep(500).then(() => setTrumpStackOpacity("opacity-0"))
-			sleep(2000).then(() => {
-				setTrumpCardPosition("translate-y-0")
-				setTrumpCardOpacity("opacity-0")
-			})
+			setEnableSelection("pointer-events-none")
 		}
-	}, [turnCount])
+	}, [currentPlayer])
 
 	return (
 		<div onClick={handleClick} className={`${enableSelection} ${trumpCardPosition} transform transition-transform relative z-20 cursor-pointer w-24 delay-75 duration-500 hover:-translate-y-5`}>

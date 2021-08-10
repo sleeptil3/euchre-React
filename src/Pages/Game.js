@@ -1,8 +1,8 @@
-import { useState, useEffect, useLayoutEffect, createContext } from "react";
+import { useState, useLayoutEffect, useEffect, createContext } from "react";
 import GameBoard from "../Components/GameBoard";
 import Header from "../Components/Header";
-import { sleep, blankCard, BASE_URI } from "../Data/data";
-import { whiteSpinner } from "../Data/data";
+import { sleep, blankCard, BASE_URI, whiteSpinner } from "../Data/data";
+import { decideTrump, decideAIplay, findIsTeammate, groupBySuit, getPlayerHand, scoreTrick } from "../Data/AI";
 
 export default function Game() {
 
@@ -35,7 +35,7 @@ export default function Game() {
 	const [callingPlayer, setCallingPlayer] = useState(null)
 	const [teamScore, setTeamScore] = useState(0);
 	const [opponentScore, setOpponentScore] = useState(0);
-	const [matchStage, setMatchStage] = useState("NEWGAME"); // NEWGAME, NEWMATCH, DEAL, CALL, PICK, PLAY
+	const [matchStage, setMatchStage] = useState("PREGAME"); // NEWGAME, NEWMATCH, DEAL, CALL, PICK, PLAY
 	const [showPrompt, setShowPrompt] = useState(false)
 	const [promptText, setPromptText] = useState({ title: "", question: "", choices: [] })
 	const [currentPrompt, setCurrentPrompt] = useState(0)
@@ -48,7 +48,7 @@ export default function Game() {
 
 	// UI State
 	const [trumpCardOpacity, setTrumpCardOpacity] = useState("opacity-0")
-	const [trumpCardPosition, setTrumpCardPosition] = useState("translate-y-0")
+	const [trumpCardPosition, setTrumpCardPosition] = useState("translate-y-0 -translate-y-0 translate-x-0 -translate-x-0")
 	const [trumpStackOpacity, setTrumpStackOpacity] = useState("opacity-0")
 	const suits = {
 		"h": {
@@ -182,7 +182,12 @@ export default function Game() {
 	}
 
 	const startMatch = () => {
+		// "Begin Match" user prompt action
 		setMatchStage("PLAY")
+		setMatchTricks({
+			callingTeam: 0,
+			opposingTeam: 0
+		})
 		setCurrentPlayer((dealer + 1) % 4)
 		setTurnCount(0)
 	}
@@ -196,7 +201,12 @@ export default function Game() {
 			setOpponentHand1([...data.deck.slice(10, 15)])
 			setOpponentHand2([...data.deck.slice(15, 20)])
 			setUpTrump(data.deck[20])
-			setCurrentPlayer((dealer + 1) % 4)
+			if (matchStage !== "PREGAME") {
+				setMatchStage("CALL")
+				setCurrentPlayer((dealer + 1) % 4)
+				setTurnCount(0)
+			} else setTurnCount(-1)
+
 		} catch (error) {
 			console.error(error)
 		}
@@ -212,66 +222,38 @@ export default function Game() {
 		return sortedHand
 	}
 
-	const groupBySuit = (cards) => {
-		return cards.reduce((acc, card) => {
-			let key = card.suit.name
-			if (!acc[key]) {
-				acc[key] = []
-			}
-			acc[key].push(card)
-			return acc
-		}, {})
-	}
-
 	const handleCallUp = (trump) => {
-		console.log(trump)
 		setTrump(trump)
-		matchStage === "CALL" && setTrumpCardPosition("translate-y-20")
 		setCallingPlayer(currentPlayer)
-		setCurrentPlayer(dealer)
-		switch (dealer) {
-			case 0: {
-				setPlayerHand([...playerHand, upTrump])
-				break
-			}
-			case 1: { setOpponentHand1([...opponentHand1, upTrump]); break; }
-			case 2: { setTeammateHand([...teammateHand, upTrump]); break; }
-			case 3: { setOpponentHand2([...opponentHand2, upTrump]); break; }
-		}
-		setMatchStage("DISCARD")
+		if (matchStage === "CALL") {
+			// handle the Trump Card Position/Opacity effects
+			dealer === yourSeat && setTrumpCardPosition("translate-y-20") // user
+			dealer === 1 && setTrumpCardPosition("-translate-x-20") // opp1
+			dealer === 2 && setTrumpCardPosition("-translate-y-20") // teammate
+			dealer === 3 && setTrumpCardPosition("translate-x-20") // opp2
+			sleep(750).then(() => setTrumpCardOpacity("opacity-0"))
 
-		setTurnCount(-10)
+			// add the card to the dealer' hand
+			sleep(1000).then(() => {
+				switch (dealer) {
+					case 0: { setPlayerHand([...playerHand, upTrump]); break; }
+					case 1: { setOpponentHand1([...opponentHand1, upTrump]); break; }
+					case 2: { setTeammateHand([...teammateHand, upTrump]); break; }
+					case 3: { setOpponentHand2([...opponentHand2, upTrump]); break; }
+				}
+				setMatchStage("DISCARD")
+				setCurrentPlayer(dealer)
+				setTurnCount(-10)
+			})
+		} else if (matchStage === "PICK" || matchStage === "STUCK") {
+			setMatchStage("READY")
+			setCurrentPlayer((dealer + 1) % 4)
+			setTurnCount(-10)
+		}
 	}
 
 	const goAlone = () => {
 		// Code
-	}
-
-	const scoreHand = (hand, trumpCode, leftSuitCode) => {
-		let score = 0
-		for (const card of hand) {
-			score += getCardScore(card, trumpCode, leftSuitCode)
-		}
-		return score
-	}
-
-	const getCardScore = (card, trumpCode, leftSuitCode) => {
-		let score = card.value
-		if (card.suit.code === trumpCode) {
-			score += 10
-			if (card.faceValue === "J") {
-				score += 30
-			}
-		}
-		if (card.suit.code === leftSuitCode && card.faceValue === "J") {
-			score += 20
-		}
-		return score
-	}
-
-	const findIsTeammate = (player1, player2) => {
-		if ((player1 + 2) % 4 === player2) return true
-		else return false
 	}
 
 	const handlePlayerChoice = (player, card) => {
@@ -287,7 +269,7 @@ export default function Game() {
 
 	const handleDiscard = (player, card) => {
 		console.log("handleDiscard", player, card)
-		const hand = getPlayerHand(player)
+		const hand = getPlayerHand(player, playerHand, nonPlayerHands)
 		switch (player) {
 			case 0: {
 				hand.splice(hand.indexOf(card), 1)
@@ -315,39 +297,13 @@ export default function Game() {
 			setTurnCount(turnCount + 1)
 		} else {
 			setMatchStage("READY")
-			setTurnCount(-1)
+			setTurnCount(turnCount - 1)
 		}
 		function swap(arr, idx1, idx2) {
 			[arr[idx1], arr[idx2]] = [arr[idx2], arr[idx1]]
 		}
 	}
 
-	const getPlayerHand = (player) => {
-		switch (player) {
-			case 0: return [...playerHand]
-			case 1: return [...opponentHand1]
-			case 2: return [...teammateHand]
-			case 3: return [...opponentHand2]
-		}
-	}
-
-	const scoreTrick = () => {
-		let highScore = 0
-		let winner
-		const plays = [playedCards[0], playedCards[1], playedCards[2], playedCards[3]]
-		console.log("score match", plays)
-		plays.forEach((play, idx) => {
-			if (play !== blankCard) {
-				const cardScore = getCardScore(play, trump.code, trump.left.code)
-				if (cardScore > highScore) {
-					highScore = cardScore
-					winner = idx
-				}
-			}
-		})
-		console.log("score match results", winner, highScore)
-		return { winner, highScore }
-	}
 
 	const handleTrickEnd = () => {
 		setPlayedCards({
@@ -358,7 +314,7 @@ export default function Game() {
 		})
 		setMatchSuit(null)
 		setMatchStage("RESULT")
-		setTurnCount(turnCount + 1)
+		setTurnCount(-10)
 	}
 
 	const scoreMatch = () => {
@@ -378,285 +334,12 @@ export default function Game() {
 			if (callingPlayer === yourSeat || findIsTeammate(callingPlayer, yourSeat)) setOpponentScore(opponentScore + 2)
 			else setTeamScore(teamScore + 2)
 		}
-		console.log("Match Score End - YT, OT", teamScore, opponentScore)
 	}
 
 	const handleMatchEnd = () => {
 		setDealer((dealer + 1) % 4)
-		setCurrentPlayer(() => (dealer + 1) % 4)
 		setMatchStage("CALL")
 		setTurnCount(0)
-	}
-
-	//////////////
-	// AI LOGIC //
-	//////////////
-
-
-
-	const scoreHandByTrump = (hand, suitMap, trumpCode) => {
-		const trumpName = suits[trumpCode].name
-		if (trumpName in suitMap) {
-			console.log(`decideTrump(CALL): Player ${currentPlayer} trump suit in hand`)
-			const leftCode = suits[trumpCode].left.code
-			const handScore = scoreHand(hand, trumpCode, leftCode)
-			let enhancedScore = handScore
-			if (matchStage === "CALL") {
-				const dealerIsTeammate = findIsTeammate(currentPlayer, dealer)
-				if (dealerIsTeammate) {
-					enhancedScore += upTrump.value + 10
-					if (upTrump.faceValue === "J") enhancedScore += 30
-				} else {
-					enhancedScore -= upTrump.value + 10
-					if (upTrump.faceValue === "J") enhancedScore -= 30
-				}
-			}
-			return enhancedScore
-		} else return 0
-	}
-
-
-
-	const decideTrump = (hand) => {
-		const suitMap = groupBySuit(hand)
-		console.log(suitMap)
-		switch (matchStage) {
-			case "CALL": {
-				sleep(10).then(() => {
-					const trumpCode = upTrump.suit.code
-					const result = scoreHandByTrump(hand, suitMap, trumpCode)
-					result > 150 ? suits[upTrump.suit.code].select() : pass()
-				})
-				break
-			}
-			case "PICK": {
-				console.log("decideTrump (PICK): PLAYER: ", currentPlayer)
-				sleep(10).then(() => {
-					const suitScores = [[scoreHandByTrump(hand, suitMap, "h"), 'h'], [scoreHandByTrump(hand, suitMap, "d"), 'd'], [scoreHandByTrump(hand, suitMap, "c"), 'c'], [scoreHandByTrump(hand, suitMap, "s"), 's']]
-					let highestScore = 0
-					let highSuit
-					for (const score of suitScores) {
-						console.log(score)
-						if (score[1] === upTrump.code) continue
-						else if (score[0] > highestScore) {
-							highestScore = score[0]
-							highSuit = score[1]
-						}
-					}
-					if (highestScore > 170) suits[highSuit].select()
-					else pass()
-				})
-
-				break
-			}
-
-			case "STUCK": {
-
-			}
-			default: console.log("decideTrump AI called on invalid match stage.")
-		}
-	}
-
-	const decideAIplay = (player) => {
-		console.log("decideAIplay: BEGIN: currentPlayer: ", player, " turn count: ", turnCount)
-		const hand = [...getPlayerHand(player)]
-		const suitMap = groupBySuit(hand)
-		let chosenCard = null
-		console.log("suitMap, player: ", suitMap, player)
-
-		if (!matchSuit) {
-			// if you are first player of match
-			console.log("decideAIplay: NO MATCH SUIT SET")
-			let highOffSuitValue = 0
-			let highOffSuitCard
-			for (const suit in suitMap) {
-				if (suit === trump.name) continue
-				for (const card of suitMap[suit]) {
-					if (card.value > highOffSuitValue) {
-						highOffSuitValue = card.value
-						highOffSuitCard = card
-					}
-				}
-			}
-			// if sufficient high offsuit card, set chosenCard
-			if (highOffSuitValue > 4) {
-				console.log("decideAIplay: sufficient high offsuit card")
-				chosenCard = highOffSuitCard
-			}
-			// if no sufficient high offsuit card
-			else if (suitMap.hasOwnProperty(trump.name)) {
-				console.log("decideAIplay: NO sufficient high offsuit card, but you have TRUMP suit")
-				// if you have trump and its the right (J), bring out the dead
-				const rightTrump = suitMap[trump.name].find(card => card.faceValue === "J")
-				chosenCard = rightTrump !== undefined ? rightTrump : null
-				if (!chosenCard) {
-					// Player only has trump in hand, so lay high trump
-					// if you have off trump, lay lowest
-					let highTrumpValue = 0
-					let highTrumpCard
-					for (const card of suitMap[trump.name]) {
-						if (card.value > highTrumpValue) {
-							highTrumpValue = card.value
-							highTrumpCard = card
-						}
-					}
-					chosenCard = highTrumpCard
-				}
-			}
-			if (!chosenCard) {
-				console.log("decideAIplay: NO high offsuit card, NO J of TRUMP suit, choosing highest offsuit")
-				chosenCard = highOffSuitCard
-			}
-		} else {
-			// not the first player, so play to matchSuit or Trump
-			console.log("decideAIplay: MATCH SUIT ALREADY SET")
-			const currentWinData = scoreTrick()
-			if (suitMap.hasOwnProperty(matchSuit)) {
-				console.log("decideAIplay: PLAYER HAS MATCH SUIT IN HAND", matchSuit)
-				if (findIsTeammate(currentWinData.winner, player)) {
-					// lay something low
-					console.log("decideAIplay: TEAMMATE IS WINNING, LAY LOW")
-					let lowCardValue = Infinity
-					let lowCard
-					for (const card of suitMap[matchSuit]) {
-						if (card.value < lowCardValue) {
-							lowCardValue = card.value
-							lowCard = card
-						}
-					}
-					chosenCard = lowCard
-				} else {
-					console.log("decideAIplay: TEAMMATE IS NOT WINNING, LAY HIGH IF YOU CAN BEAT IT")
-					// try to win
-					let highCardValue = currentWinData.highScore
-					let highCard
-					for (const card of suitMap[matchSuit]) {
-						if (card.value > highCardValue) {
-							highCardValue = card.value
-							highCard = card
-						}
-					}
-					chosenCard = highCard
-					// can't beat it, lay low offsuit
-					if (!chosenCard) {
-						let lowCardValue = Infinity
-						let lowCard
-						for (const suit in suitMap) {
-							if (suit === trump.name) continue
-							for (const card of suitMap[matchSuit]) {
-								if (card.value < lowCardValue) {
-									lowCardValue = card.value
-									lowCard = card
-								}
-							}
-						}
-						chosenCard = lowCard
-					}
-					if (!chosenCard) {
-						// trump is matchSuit, try to win
-						let highTrumpValue = currentWinData.highScore
-						let highTrumpCard
-						for (const card of suitMap[trump.name]) {
-							if (card.value > highTrumpValue) {
-								highTrumpValue = card.value
-								highTrumpCard = card
-							}
-						}
-						chosenCard = highTrumpCard
-					}
-					if (!chosenCard) {
-						// trump high doesnt win, lay low
-						let lowCardValue = 0
-						let lowCard
-						for (const card of suitMap[trump.name]) {
-							if (card.value < lowCardValue) {
-								lowCardValue = card.value
-								lowCard = card
-							}
-						}
-						chosenCard = lowCard
-					}
-				}
-			} else {
-				console.log("decideAIplay: PLAYER DOES NOT HAVE MATCH SUIT IN HAND")
-				if (findIsTeammate(currentWinData.winner, player)) {
-					console.log("decideAIplay: TEAMMATE IS WINNING, LAY LOW OFF SUIT")
-					// if you have off trump, lay lowest
-					let lowCardValue = Infinity
-					let lowCard
-					for (const suit in suitMap) {
-						if (suit === trump.name) continue
-						for (const card of suitMap[suit]) {
-							if (card.value < lowCardValue) {
-								lowCardValue = card.value
-								lowCard = card
-							}
-						}
-					}
-					chosenCard = lowCard
-					// if you only have trump, lay lowest
-					if (!chosenCard) {
-						for (const card of suitMap[trump.name]) {
-							if (card.value < lowCardValue) {
-								lowCardValue = card.value
-								lowCard = card
-							}
-						}
-						chosenCard = lowCard
-					}
-				} else {
-					console.log("decideAIplay: TEAMMATE IS NOT WINNING, LAY LOWEST WINNING TRUMP TO WIN OR LOW OFFSUIT TO PASS")
-					let lowTrumpValue = Infinity
-					let lowTrumpCard = null
-					if (suitMap.hasOwnProperty(trump.name)) {
-						for (const trumpCard of suitMap[trump.name]) {
-							const scoredTrump = getCardScore(trumpCard, trump.name, trump.left.name)
-							if (scoredTrump > currentWinData.highScore) {
-								if (scoredTrump < lowTrumpValue) {
-									lowTrumpValue = scoredTrump
-									lowTrumpCard = trumpCard
-								}
-							}
-						}
-						chosenCard = lowTrumpCard
-					}
-					// didn't have any winning trump
-					if (!chosenCard) {
-						let lowestOffSuitValue = Infinity
-						let lowestOffSuitCard
-						for (const card of hand) {
-							if (card.suit.name === trump.name) continue
-							if (card.value < lowestOffSuitValue) {
-								lowestOffSuitValue = card.value
-								lowestOffSuitCard = card
-							}
-						}
-						chosenCard = lowestOffSuitCard
-					}
-					if (!chosenCard) {
-						let highTrumpValue = 0
-						let highTrumpCard = null
-						for (const card of suitMap[trump.name]) {
-							if (card.value > highTrumpValue) {
-								highTrumpValue = card.value
-								highTrumpCard = card
-							}
-						}
-						chosenCard = highTrumpCard
-					}
-				}
-			}
-		}
-		if (!chosenCard) {
-			console.log("AI ERROR - NO CHOSEN CARD - player: ", player)
-			console.log("AI ERROR HAND - ", hand, suitMap)
-		}
-		console.log("AI CHOSEN CARD + HAND", chosenCard, hand)
-
-		sleep(10).then(() => {
-			handlePlayerChoice(player, chosenCard)
-		})
-
 	}
 
 
@@ -665,8 +348,8 @@ export default function Game() {
 	////////////////
 
 	// Game Setup
-	useLayoutEffect(() => {
-		console.log("Game Initialized: Getting Deck and setting up hands")
+	useEffect(() => {
+		console.log("New Deal: Getting Deck and setting up hands")
 		getDeck()
 	}, [dealer])
 
@@ -674,83 +357,100 @@ export default function Game() {
 	useLayoutEffect(() => {
 		switch (matchStage) {
 			case "NEWGAME": {
-				// console.log("Prompt Management NEWGAME Stage")
-				// setMatchStage("CALL")
-				// setTurnCount(0)
+				if (upTrump.faceValue === undefined) sleep(500).then(() => setTurnCount(turnCount - 1))
+				else {
+					setMatchStage("CALL")
+					setTurnCount(0)
+				}
+				console.log(nonPlayerHands)
 				break
 			}
 			case "NEWMATCH": {
-				console.log("Prompt Management NEWMATCH Stage")
+				console.log("------------------ NEWMATCH Stage")
+				console.log(nonPlayerHands)
 				break
 			}
 			case "CALL": {
-				console.log("Prompt Management Call Stage")
-				if (upTrump.faceValue === undefined) sleep(1000).then(() => setTurnCount(turnCount - 1))
-				else {
-					if (turnCount > 3) {
-						setMatchStage("PICK")
-						setCurrentPlayer((dealer + 1) % 4)
-						setTurnCount(0)
-					} else {
-						if (turnCount < 0) setTurnCount((dealer + 1) % 4)
-						else {
+				console.log("------------------ Call Stage")
+				turnCount === 0 && setCurrentPlayer((dealer + 1) % 4)
+				if (upTrump.faceValue === undefined) {
+					sleep(750).then(() => setTurnCount(turnCount - 1))
+				} else {
+					trumpStackOpacity === "opacity-0" && sleep(750).then(() => setTrumpStackOpacity("opacity-100"))
+					trumpCardOpacity === "opacity-0" && sleep(1250).then(() => setTrumpCardOpacity("opacity-100"))
+					if (turnCount >= 0) {
+						if (turnCount > 3) {
+							setMatchStage("PICK")
+							setCurrentPlayer((dealer + 1) % 4)
+							setTurnCount(0)
+							break
+						} else {
 							if (currentPlayer === yourSeat) {
 								setPromptText(prompts.trump1Turn) // OPTION TO CALL IT UP
 							} else {
 								setPromptText(prompts.trump1Round) // AWAITING TURN TO CALL IT UP
-								sleep(1000).then(() => decideTrump(nonPlayerHands[currentPlayer - 1]))
+								sleep(1000).then(() => decideTrump(currentPlayer, nonPlayerHands[currentPlayer - 1], matchStage, upTrump, suits, dealer, pass))
 							}
 						}
+					} else {
+						setTurnCount(0)
 					}
 				}
 				break
 			}
 			case "PICK": {
-				console.log("Prompt Management Pick Stage")
+				console.log("------------------ Pick Stage")
+				trumpCardOpacity === "opacity-100" && setTrumpCardOpacity("opacity-0")
 				if (turnCount > 2) {
 					setMatchStage("STUCK")
 					setCurrentPlayer(dealer)
-					setTurnCount(0)
+					setTurnCount(-1)
 				} else {
 					if (currentPlayer === yourSeat) {
 						setPromptText(prompts.trump2Turn) // AWAITING TURN TO DECLARE IT
 					} else {
 						setPromptText(prompts.trump2Round) // OPTION TO DECLARE IT
-						sleep(1000).then(() => decideTrump(nonPlayerHands[currentPlayer - 1]))
+						sleep(1000).then(() => decideTrump(currentPlayer, nonPlayerHands[currentPlayer - 1], matchStage, upTrump, suits, dealer, pass))
 					}
 				}
 				break
 			}
 			case "STUCK": {
+				console.log("------------------ STUCK Stage", dealer)
 				if (dealer === yourSeat) {
 					setPromptText(prompts.trump2Stuck) // STUCK TO DEALER YOU
 				} else {
 					setPromptText(prompts.trump2StuckOther) // STUCK TO DEALER OTHER PLAYER
+					sleep(1000).then(() => decideTrump(currentPlayer, nonPlayerHands[dealer - 1], matchStage, upTrump, suits, dealer, pass))
 				}
 				break
 			}
 			case "READY": {
-				console.log("Prompt Management READY Stage")
+				console.log("------------------ READY Stage")
+				setTrumpStackOpacity("opacity-0")
+				setTrumpCardPosition("translate-y-0 -translate-y-0 translate-x-0 -translate-x-0")
 				setPromptText(prompts.ready)
 				break
 			}
 			case "DISCARD": {
-				console.log("Prompt Management DISCARD Stage")
+				// USER DISCARD NOT COMPUTER
+				console.log("------------------ DISCARD Stage")
 				if (yourSeat === dealer) setPromptText(prompts.discard)
 				else handleDiscard(dealer, upTrump)
 				break
 			}
 			case "PLAY": {
-				console.log("Prompt Management Play Stage")
+				// MATCH PLAY
+				console.log("------------------ Play Stage")
 				if (turnCount < 4) {
 					if (currentPlayer === yourSeat) {
 						setPromptText(prompts.yourTurn)
 					} else {
 						setPromptText(prompts.othersTurn)
-						decideAIplay(currentPlayer)
+						decideAIplay(currentPlayer, trump, matchSuit, playerHand, nonPlayerHands, handlePlayerChoice, playedCards)
 					}
 				} else {
-					const trickScoreData = scoreTrick()
+					const trickScoreData = scoreTrick(playedCards, trump)
 					setCurrentTrickScore(trickScoreData)
 					if (trickScoreData.winner === callingPlayer || findIsTeammate(trickScoreData.winner, callingPlayer)) {
 						setMatchTricks({ ...matchTricks, callingTeam: ++matchTricks.callingTeam })
@@ -766,8 +466,10 @@ export default function Game() {
 				break
 			}
 			case "RESULT": {
-				console.log("Prompt Management RESULT Stage")
+				// END OF TRICK OR END OF MATCH
+				console.log("------------------ RESULT Stage")
 				if (matchTricks.opposingTeam + matchTricks.callingTeam === 5) {
+					console.log("------------------ RESULT Stage: 5 tricks done - scorematch")
 					scoreMatch()
 					setUpTrump({})
 					setTrump({})
@@ -775,8 +477,11 @@ export default function Game() {
 					if (teamScore >= 10 || opponentScore >= 10) {
 						setMatchStage("GAMEOVER")
 						setPromptText(prompts.gameOver)
+						setTurnCount(0)
 					}
-					else setPromptText(prompts.matchResult)
+					else {
+						setPromptText(prompts.matchResult)
+					}
 				}
 				else {
 					setCurrentPlayer(currentMatchScore.winner)
@@ -786,14 +491,16 @@ export default function Game() {
 				break
 			}
 			case "GAMEOVER": {
-				console.log("Prompt Management GAMEOVER Stage")
+				// WIN CONDITION MET
+				console.log("------------------ GAMEOVER Stage")
+				// Setup a reset for another game
 				break
 			}
-			default: console.log("Prompt Management Default Case")
+			default: console.log("------------------ Default Stage")
 		}
 	}, [turnCount]);
 
-	console.log("LOG: (dealer, stage, cp, tc, pH, tH, oH1, oH2, uT, trump", dealer, matchStage, currentPlayer, turnCount, playerHand, opponentHand1, teammateHand, opponentHand2, upTrump, trump)
+	console.log("LOG: (stage, dealer, currPlay, turnCt, upTrmp, trump)", matchStage, dealer, currentPlayer, turnCount, upTrump, trump)
 
 	////////////
 	// RENDER //
