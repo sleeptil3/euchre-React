@@ -8,7 +8,7 @@ export default function PlayField() {
 	const { playedCards } = useContext(DataContext)
 
 	return (
-		<div className="w-1/4 h-2/5 bg-opacity-25 relative flex justify-center items-center bottom-16 pointer-events-none">
+		<div className="w-1/4 h-2/5 bg-opacity-25 relative flex justify-center items-center bottom-16 right-14 pointer-events-none">
 			<div className="absolute w-full h-1/2 flex justify-between items-center">
 				<div className="transform rotate-6">{playedCards[1] === blankCard ? <Card card={blankCard} /> : <Card card={playedCards[1]} />}</div>
 				<div className="transform -rotate-6">{playedCards[3] === blankCard ? <Card card={blankCard} /> : <Card card={playedCards[3]} />}</div>

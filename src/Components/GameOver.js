@@ -6,9 +6,9 @@ export default function GameOver() {
 
 	return (
 		<div className={`absolute top-0 bottom-0 left-0 right-0 z-10 transform backdrop-filter backdrop-blur-md flex flex-col justify-center items-center`}>
-			<h1 className="text-white text-opacity-80 text-xl font-bold">Game Over</h1>
-			<h2 className="text-white text-opacity-80 text-md font-extralight">{teamScore >= 10 ? "Your team won!" : "The other team won..."}</h2>
-			<div className="mt-10 text-white flex space-x-5 text-opacity-80 text-lg font-extralight">
+			<h1 className="text-white text-opacity-80 text-3xl font-bold">Game Over</h1>
+			<h2 className="text-white text-opacity-80 text-lg font-extralight">{teamScore >= 10 ? "Your team won!" : "The other team won..."}</h2>
+			<div className="mt-10 text-white flex space-x-5 text-opacity-80 text-md font-extralight">
 				<h2>
 					Check out the code:
 				</h2>

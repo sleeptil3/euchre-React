@@ -1,7 +1,6 @@
 
 import { useContext, useLayoutEffect, useEffect, useState } from "react"
 import { DataContext } from "../Pages/Game"
-import { sleep } from "../Data/data"
 
 export default function Card() {
 	const { trumpCardPosition, setTrumpCardPosition, setTrumpStackOpacity, trumpCardOpacity, setTrumpCardOpacity, suits, matchStage, turnCount, yourSeat, upTrump, currentPlayer } = useContext(DataContext)

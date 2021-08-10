@@ -4,6 +4,20 @@ import { sleep, blankCard } from "./data"
 // AI LOGIC //
 //////////////
 
+// Normal Play
+const minAloneScore = 100
+const minCallScore = 70
+
+// Debug
+// const minAloneScore = 500
+// const minCallScore = 500
+
+// Normal Pace
+const decidePace = 1000
+
+// Debug Pace
+// const decidePace = 100
+
 const scoreHand = (hand, trumpCode, leftSuitCode) => {
 	let score = 0
 	for (const card of hand) {
@@ -39,7 +53,7 @@ const scoreHandByTrump = (currentPlayer, hand, matchStage, suitMap, trumpCode, u
 				if (upTrump.faceValue === "J") enhancedScore += 30
 			} else {
 				enhancedScore -= upTrump.value + 10
-				if (upTrump.faceValue === "J") enhancedScore -= 30
+				if (upTrump.faceValue === "J") enhancedScore -= 20
 			}
 		}
 		return enhancedScore
@@ -88,16 +102,18 @@ export const scoreTrick = (playedCards, trump) => {
 }
 
 
-export const decideTrump = (currentPlayer, hand, matchStage, upTrump, suits, dealer, pass) => {
+export const decideTrump = (currentPlayer, hand, matchStage, upTrump, suits, dealer, pass, setGoAlone) => {
 	console.log("------------------ DECIDE TRUMP FUNCTION: Player: ", currentPlayer)
 	const suitMap = groupBySuit(hand)
 	switch (matchStage) {
 		case "CALL": {
-			sleep(1000).then(() => {
+			sleep(decidePace).then(() => {
 				const trumpCode = upTrump.suit.code
 				const result = scoreHandByTrump(currentPlayer, hand, matchStage, suitMap, trumpCode, upTrump, suits, dealer)
 				console.log("Hand Score: ", result)
-				result > 55 ? suits[upTrump.suit.code].select() : pass()
+				if (result >= minAloneScore) setGoAlone(currentPlayer)
+				if (result > minCallScore) suits[upTrump.suit.code].select()
+				else pass()
 			})
 			break
 		}
@@ -108,22 +124,24 @@ export const decideTrump = (currentPlayer, hand, matchStage, upTrump, suits, dea
 				[scoreHandByTrump(currentPlayer, hand, matchStage, suitMap, "d", upTrump, suits, dealer), 'd'],
 				[scoreHandByTrump(currentPlayer, hand, matchStage, suitMap, "c", upTrump, suits, dealer), 'c'],
 				[scoreHandByTrump(currentPlayer, hand, matchStage, suitMap, "s", upTrump, suits, dealer), 's']]
-			sleep(1000).then(() => {
+			sleep(decidePace).then(() => {
 				let highestScore = 0
-				let highSuit
+				let highSuitCode
 				for (const score of suitScores) {
 					if (score[1] === upTrump.code) continue
 					else if (score[0] > highestScore) {
 						highestScore = score[0]
-						highSuit = score[1]
+						highSuitCode = score[1]
 					}
 				}
 				console.log("Hand Scores per Trump (h/d/c/s): ", suitScores)
 				if (matchStage === "PICK") {
-					if (highestScore > 70) suits[highSuit].select()
+					if (highestScore >= minAloneScore) setGoAlone(currentPlayer)
+					if (highestScore > minCallScore) suits[highSuitCode].select()
 					else pass()
 				} else {
-					suits[highSuit].select()
+					if (highestScore >= minAloneScore) setGoAlone(currentPlayer)
+					suits[highSuitCode].select()
 				}
 			})
 			break
@@ -332,7 +350,7 @@ export const decideAIplay = (player, trump, matchSuit, playerHand, nonPlayerHand
 	}
 	console.log("------------------ DECIDE AI PLAY RESULT: (card/hand)", chosenCard, hand)
 
-	sleep(1000).then(() => {
+	sleep(decidePace).then(() => {
 		handlePlayerChoice(player, chosenCard)
 	})
 }

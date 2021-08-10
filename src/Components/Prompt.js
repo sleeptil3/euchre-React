@@ -10,10 +10,10 @@ export default function Prompt() {
 			<h1 className="text-lg font-bold">{promptText.title}</h1>
 			<h2 className="text-md">{promptText.question}</h2>
 			{promptText.choices.length > 0 &&
-				<ul className="py-3">Choose:
+				<ul className="py-3">
 					{promptText.choices.map(choice => {
 						return (
-							<li key={uuid()} className="ml-4 inline cursor-pointer hover:underline" onClick={choice.action}>{choice.text}</li>
+							<li key={uuid()} className={`px-2 ${choice.text === "Pass" && "text-red-400 font-normal"} ${choice.text === "Go Alone" && "text-green-400 font-normal"} inline cursor-pointer hover:underline`} onClick={choice.action}>{choice.text}</li>
 						)
 					})}
 				</ul>

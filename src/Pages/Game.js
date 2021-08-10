@@ -10,6 +10,12 @@ export default function Game() {
 	// GAME STATE //
 	////////////////
 
+	// Normal Pace
+	const decidePace = 1000
+
+	// Debug Pace
+	// const decidePace = 100
+
 	// Card State
 	const [playerHand, setPlayerHand] = useState([]);
 	const [teammateHand, setTeammateHand] = useState([]);
@@ -45,6 +51,7 @@ export default function Game() {
 	})
 	const [currentMatchScore, setCurrentTrickScore] = useState({})
 	const [matchSuit, setMatchSuit] = useState(null)
+	const [goAlone, setGoAlone] = useState(null)
 
 	// UI State
 	const [trumpCardOpacity, setTrumpCardOpacity] = useState("opacity-0")
@@ -93,43 +100,48 @@ export default function Game() {
 
 	const prompts = {
 		trump1Round: {
-			title: "Trump Selection Round 1",
+			title: "Trump Selection",
 			question: `${currentPlayer % 2 === 0 ? "Your Teammate is making their decision" : `Player ${currentPlayer} is making their decision`}n`,
 			choices: []
 		},
 		trump1Turn: {
-			title: "Trump Selection Round 1",
-			question: "It's your turn: to order it up, click the Kitty or...",
-			choices: [{ text: "Pass", action: () => pass() }]
+			title: "Trump Selection",
+			question: "What would you like to do?",
+			choices: [{ text: "Order It Up", action: () => suits[upTrump.suit.code].select() }, { text: "Go Alone", action: () => handleGoAlone(upTrump.suit.code) }, { text: "Pass", action: () => pass() }]
 		},
 		trump2Round: {
-			title: "Trump Selection Round 2",
+			title: "Trump Selection",
 			question: `It's ${currentPlayer === 2 ? "your teammate's" : "the other team's"} turn`,
 			choices: []
 		},
 		trump2Turn: {
-			title: "Trump Selection Round 2",
-			question: "Choose a trump suit or pass:",
-			choices: [{ text: suits.d.name, action: suits.d.select }, { text: suits.h.name, action: suits.h.select }, { text: suits.c.name, action: suits.c.select }, { text: suits.s.name, action: suits.s.select }, { text: "Pass", action: () => pass() }]
+			title: "Trump Selection",
+			question: "Want to call Trump or pass?",
+			choices: [{ text: suits.d.name, action: suits.d.select }, { text: suits.h.name, action: suits.h.select }, { text: suits.c.name, action: suits.c.select }, { text: suits.s.name, action: suits.s.select }, { text: "Go Alone", action: () => setPromptText(prompts.trump2TurnAlone) }, { text: "Pass", action: () => pass() }]
 		},
 		trump2TurnAlone: {
-			title: "Feeling lucky?",
-			question: "Would you like to go it alone?",
-			choices: [{ text: "Yes", action: () => goAlone() }, { text: "No", action: suits.h.select }, { text: suits.c.name, action: suits.c.select }, { text: suits.s.name, action: suits.s.select }, { text: "Pass", action: () => pass() }]
+			title: "Feeling lucky, huh?",
+			question: "Which suit?",
+			choices: [{ text: suits.d.name, action: () => handleGoAlone(suits.d.code) }, { text: suits.h.name, action: () => handleGoAlone(suits.h.code) }, { text: suits.c.name, action: () => handleGoAlone(suits.c.code) }, { text: suits.s.name, action: () => handleGoAlone(suits.s.code) }, { text: "Cancel", action: () => matchStage === "STUCK" ? setPromptText(prompts.trump2Stuck) : setPromptText(prompts.trump2Turn) }]
 		},
 		trump2Stuck: {
 			title: "Stuck to Dealer",
 			question: "You must select Trump:",
-			choices: [{ text: suits.d.name, action: suits.d.select }, { text: suits.h.name, action: suits.h.select }, { text: suits.c.name, action: suits.c.select }, { text: suits.s.name, action: suits.s.select }]
+			choices: [{ text: suits.d.name, action: suits.d.select }, { text: suits.h.name, action: suits.h.select }, { text: suits.c.name, action: suits.c.select }, { text: suits.s.name, action: suits.s.select }, { text: "Go Alone", action: () => setPromptText(prompts.trump2TurnAlone) }, { text: "Pass", action: () => pass() }]
 		},
 		trump2StuckOther: {
 			title: "Stuck to Dealer",
-			question: "...dealer is making their decision",
+			question: "...the dealer is making their decision...",
 			choices: []
 		},
 		ready: {
 			title: `Ready to Play`,
 			question: `${callingPlayer % 2 === 0 ? `Your team called ${trump.name}` : `The other team called ${trump.name}`}.`,
+			choices: [{ text: "Begin Match", action: () => startMatch() }]
+		},
+		readyAlone: {
+			title: `Ready to Play`,
+			question: `${goAlone === yourSeat ? "You decided to Go Alone. Good luck!" : ((goAlone + 2) % 4 === goAlone) ? "Your teammate decided to go alone. Sit back and relax!" : `Player ${goAlone} on the other team is going alone. Good luck!`}`,
 			choices: [{ text: "Begin Match", action: () => startMatch() }]
 		},
 		discard: {
@@ -161,13 +173,7 @@ export default function Game() {
 			title: "Match Complete",
 			question: `The Game Continues...`,
 			choices: [{ text: "Next Round", action: () => handleMatchEnd() }]
-		},
-		gameOver: {
-			title: "",
-			question: ``,
-			choices: []
-		},
-		// inTheBarn: {}
+		}
 	}
 
 
@@ -181,13 +187,14 @@ export default function Game() {
 		setTurnCount(turnCount + 1)
 	}
 
+	const handleGoAlone = (trumpSuitCode) => {
+		setGoAlone(currentPlayer)
+		suits[trumpSuitCode].select()
+	}
+
 	const startMatch = () => {
 		// "Begin Match" user prompt action
 		setMatchStage("PLAY")
-		setMatchTricks({
-			callingTeam: 0,
-			opposingTeam: 0
-		})
 		setCurrentPlayer((dealer + 1) % 4)
 		setTurnCount(0)
 	}
@@ -196,6 +203,14 @@ export default function Game() {
 		try {
 			const response = await fetch(BASE_URI + "deck")
 			const data = await response.json()
+			// setPlayerHand([ // Debug Trump Hand
+			// 	{ faceValue: "J", value: 3, suit: { code: "d", name: "Diamonds", left: { code: "h", name: "Hearts" } } },
+			// 	{ faceValue: "J", value: 3, suit: { code: "h", name: "Hearts", left: { code: "d", name: "Diamonds" } } },
+			// 	{ faceValue: "A", value: 6, suit: { code: "d", name: "Diamonds", left: { code: "h", name: "Hearts" } } },
+			// 	{ faceValue: "K", value: 5, suit: { code: "d", name: "Diamonds", left: { code: "h", name: "Hearts" } } },
+			// 	{ faceValue: "Q", value: 4, suit: { code: "d", name: "Diamonds", left: { code: "h", name: "Hearts" } } },
+
+			// ])
 			setPlayerHand(sortHand([...data.deck.slice(0, 5)]))
 			setTeammateHand([...data.deck.slice(5, 10)])
 			setOpponentHand1([...data.deck.slice(10, 15)])
@@ -234,7 +249,7 @@ export default function Game() {
 			sleep(750).then(() => setTrumpCardOpacity("opacity-0"))
 
 			// add the card to the dealer's hand
-			sleep(1000).then(() => {
+			sleep(decidePace).then(() => {
 				switch (dealer) {
 					case 0: { setPlayerHand([...playerHand, upTrump]); break; }
 					case 1: { setOpponentHand1([...opponentHand1, upTrump]); break; }
@@ -250,10 +265,6 @@ export default function Game() {
 			setCurrentPlayer((dealer + 1) % 4)
 			setTurnCount(-10)
 		}
-	}
-
-	const goAlone = () => {
-		// Code
 	}
 
 	const handlePlayerChoice = (player, card) => {
@@ -318,15 +329,30 @@ export default function Game() {
 	}
 
 	const scoreMatch = () => {
+		let tempTeamScore = teamScore
+		let tempOpposingScore = opponentScore
 		if (matchTricks.callingTeam > matchTricks.opposingTeam) {
 			// Calling Team won the match
 			if (matchTricks.callingTeam >= 3) {
 				if (matchTricks.callingTeam === 5) {
-					if (callingPlayer === yourSeat || findIsTeammate(callingPlayer, yourSeat)) setTeamScore(teamScore + 2)
-					else setOpponentScore(opponentScore + 2)
+					const scoreCalc = goAlone !== null ? 4 : 2
+					if (callingPlayer === yourSeat || findIsTeammate(callingPlayer, yourSeat)) {
+						tempTeamScore += scoreCalc
+						setTeamScore(tempTeamScore)
+					}
+					else {
+						tempOpposingScore += scoreCalc
+						setOpponentScore(tempOpposingScore)
+					}
 				} else {
-					if (callingPlayer === yourSeat || findIsTeammate(callingPlayer, yourSeat)) setTeamScore(teamScore + 1)
-					else setOpponentScore(opponentScore + 1)
+					if (callingPlayer === yourSeat || findIsTeammate(callingPlayer, yourSeat)) {
+						tempTeamScore++
+						setTeamScore(tempTeamScore)
+					}
+					else {
+						tempOpposingScore++
+						setOpponentScore(tempOpposingScore)
+					}
 				}
 			}
 		} else {
@@ -334,10 +360,26 @@ export default function Game() {
 			if (callingPlayer === yourSeat || findIsTeammate(callingPlayer, yourSeat)) setOpponentScore(opponentScore + 2)
 			else setTeamScore(teamScore + 2)
 		}
+		if (tempTeamScore >= 10 || tempOpposingScore >= 10) {
+			setMatchStage("GAMEOVER")
+			setTurnCount(100)
+		}
+		else {
+			setPromptText(prompts.matchResult)
+		}
+
 	}
 
 	const handleMatchEnd = () => {
 		setDealer((dealer + 1) % 4)
+		setUpTrump({})
+		setTrump({})
+		setGoAlone(null)
+		setMatchTricks({
+			callingTeam: 0,
+			opposingTeam: 0
+		})
+		setCallingPlayer(null)
 		setMatchStage("CALL")
 		setTurnCount(0)
 	}
@@ -399,7 +441,7 @@ export default function Game() {
 								setPromptText(prompts.trump1Turn) // OPTION TO CALL IT UP
 							} else {
 								setPromptText(prompts.trump1Round) // AWAITING TURN TO CALL IT UP
-								sleep(1000).then(() => decideTrump(currentPlayer, nonPlayerHands[currentPlayer - 1], matchStage, upTrump, suits, dealer, pass))
+								sleep(decidePace).then(() => decideTrump(currentPlayer, nonPlayerHands[currentPlayer - 1], matchStage, upTrump, suits, dealer, pass, setGoAlone))
 							}
 						}
 					} else {
@@ -421,7 +463,7 @@ export default function Game() {
 						setPromptText(prompts.trump2Turn) // AWAITING TURN TO DECLARE IT
 					} else {
 						setPromptText(prompts.trump2Round) // OPTION TO DECLARE IT
-						sleep(1000).then(() => decideTrump(currentPlayer, nonPlayerHands[currentPlayer - 1], matchStage, upTrump, suits, dealer, pass))
+						sleep(decidePace).then(() => decideTrump(currentPlayer, nonPlayerHands[currentPlayer - 1], matchStage, upTrump, suits, dealer, pass, setGoAlone))
 					}
 				}
 				break
@@ -433,7 +475,7 @@ export default function Game() {
 					setPromptText(prompts.trump2Stuck) // STUCK TO DEALER YOU
 				} else {
 					setPromptText(prompts.trump2StuckOther) // STUCK TO DEALER OTHER PLAYER
-					sleep(1000).then(() => decideTrump(currentPlayer, nonPlayerHands[dealer - 1], matchStage, upTrump, suits, dealer, pass))
+					sleep(decidePace).then(() => decideTrump(currentPlayer, nonPlayerHands[dealer - 1], matchStage, upTrump, suits, dealer, pass, setGoAlone))
 				}
 				break
 			}
@@ -441,7 +483,7 @@ export default function Game() {
 				console.log("------------------ READY Stage")
 				setTrumpStackOpacity("opacity-0")
 				setTrumpCardPosition("translate-y-0 -translate-y-0 translate-x-0 -translate-x-0")
-				setPromptText(prompts.ready)
+				!goAlone ? setPromptText(prompts.ready) : setPromptText(prompts.goAlone)
 				break
 			}
 			case "DISCARD": {
@@ -454,6 +496,11 @@ export default function Game() {
 			case "PLAY": {
 				// MATCH PLAY
 				console.log("------------------ Play Stage")
+				if (goAlone !== null && (currentPlayer === (goAlone + 2) % 4)) {
+					setCurrentPlayer((currentPlayer + 1) % 4)
+					setTurnCount(turnCount + 1)
+					break
+				}
 				if (turnCount < 4) {
 					if (currentPlayer === yourSeat) {
 						setPromptText(prompts.yourTurn)
@@ -480,20 +527,14 @@ export default function Game() {
 			case "RESULT": {
 				// END OF TRICK OR END OF MATCH
 				console.log("------------------ RESULT Stage")
+				if (teamScore >= 10 || opponentScore >= 10) {
+					setMatchStage("GAMEOVER")
+					setTurnCount(100)
+					break
+				}
 				if (matchTricks.opposingTeam + matchTricks.callingTeam === 5) {
 					console.log("------------------ RESULT Stage: 5 tricks done - scorematch")
 					scoreMatch()
-					setUpTrump({})
-					setTrump({})
-					setCallingPlayer(null)
-					if (teamScore >= 10 || opponentScore >= 10) {
-						setMatchStage("GAMEOVER")
-						setPromptText(prompts.gameOver)
-						setTurnCount(0)
-					}
-					else {
-						setPromptText(prompts.matchResult)
-					}
 				}
 				else {
 					setCurrentPlayer(currentMatchScore.winner)
@@ -518,7 +559,7 @@ export default function Game() {
 	////////////
 
 	return (
-		<DataContext.Provider value={{ trumpStackOpacity, setTrumpStackOpacity, matchTricks, playedCards, setPlayedCards, handlePlayerChoice, handleDiscard, trumpCardPosition, setTrumpCardPosition, trumpCardOpacity, setTrumpCardOpacity, pass, goAlone, yourSeat, turnCount, setTurnCount, callingPlayer, setCallingPlayer, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
+		<DataContext.Provider value={{ goAlone, trumpStackOpacity, setTrumpStackOpacity, matchTricks, playedCards, setPlayedCards, handlePlayerChoice, handleDiscard, trumpCardPosition, setTrumpCardPosition, trumpCardOpacity, setTrumpCardOpacity, pass, yourSeat, turnCount, setTurnCount, callingPlayer, setCallingPlayer, upTrump, suits, opponentScore, setOpponentScore, currentPrompt, setCurrentPrompt, promptText, setPromptText, showPrompt, setShowPrompt, playerHand, setPlayerHand, teammateHand, setTeammateHand, opponentHand1, setOpponentHand1, opponentHand2, setOpponentHand2, trump, setTrump, teamScore, setTeamScore, matchStage, setMatchStage, dealer, setDealer, currentPlayer, setCurrentPlayer }}>
 			<div className="h-screen bg-gray-800 flex flex-col justify-start items-center">
 				<Header />
 				<div className="h-full w-full flex justify-center items-center">
