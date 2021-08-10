@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { DataContext } from "../Pages/Game";
 import { spinner, dealerIcon } from "../Data/data";
 
@@ -14,7 +14,7 @@ export default function DownHand({ position, handLength }) {
 		"absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center"
 	];
 
-	useLayoutEffect(() => {
+	useEffect(() => {
 		setImage(imageURLS[handLength]);
 	}, [handLength]);
 

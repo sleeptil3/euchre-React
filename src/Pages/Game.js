@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useEffect, createContext } from "react";
+import { useState, useEffect, createContext } from "react";
 import GameBoard from "../Components/GameBoard";
 import Header from "../Components/Header";
 import { sleep, blankCard, BASE_URI, whiteSpinner } from "../Data/data";
@@ -396,7 +396,7 @@ export default function Game() {
 	}, [dealer])
 
 	// Game Logic
-	useLayoutEffect(() => {
+	useEffect(() => {
 		switch (matchStage) {
 			case "PREGAME": {
 				console.log("------------------ PREGAME Stage")

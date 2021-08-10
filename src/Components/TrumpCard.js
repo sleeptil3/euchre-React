@@ -1,9 +1,9 @@
 
-import { useContext, useLayoutEffect, useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { DataContext } from "../Pages/Game"
 
 export default function Card() {
-	const { trumpCardPosition, setTrumpCardPosition, setTrumpStackOpacity, trumpCardOpacity, setTrumpCardOpacity, suits, matchStage, turnCount, yourSeat, upTrump, currentPlayer } = useContext(DataContext)
+	const { trumpCardPosition, trumpCardOpacity, suits, matchStage, yourSeat, upTrump, currentPlayer } = useContext(DataContext)
 	const [cardCode, setCardCode] = useState("")
 	const [enableSelection, setEnableSelection] = useState("pointer-events-none")
 
