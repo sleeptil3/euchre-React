@@ -215,9 +215,9 @@ export default function Game() {
 	const sortHand = (hand) => {
 		const suitMap = groupBySuit(hand)
 		let sortedHand = []
-		for (const suit in suitMap) {
-			suitMap[suit].sort((a, b) => a.value - b.value)
-			suitMap[suit].forEach(card => sortedHand.push(card))
+		for (const suitCode in suitMap) {
+			suitMap[suitCode].sort((a, b) => a.value - b.value)
+			suitMap[suitCode].forEach(card => sortedHand.push(card))
 		}
 		return sortedHand
 	}
@@ -233,7 +233,7 @@ export default function Game() {
 			dealer === 3 && setTrumpCardPosition("translate-x-20") // opp2
 			sleep(750).then(() => setTrumpCardOpacity("opacity-0"))
 
-			// add the card to the dealer' hand
+			// add the card to the dealer's hand
 			sleep(1000).then(() => {
 				switch (dealer) {
 					case 0: { setPlayerHand([...playerHand, upTrump]); break; }
@@ -259,8 +259,8 @@ export default function Game() {
 	const handlePlayerChoice = (player, card) => {
 		console.log("handlePlayerChoice", player, card)
 		if (!matchSuit) {
-			if (trump.left.code === card.suit.code) setMatchSuit(trump.name)
-			else setMatchSuit(card.suit.name)
+			if ((trump.left.code === card.suit.code) && card.faceValue === "J") setMatchSuit(trump.code)
+			else setMatchSuit(card.suit.code)
 		}
 		setPlayedCards({ ...playedCards, [player]: card })
 		setCurrentPlayer((currentPlayer + 1) % 4)
@@ -268,7 +268,7 @@ export default function Game() {
 	}
 
 	const handleDiscard = (player, card) => {
-		console.log("handleDiscard", player, card)
+		console.log("------------------HANDLE DISCARD FUNCTION", player, card)
 		const hand = getPlayerHand(player, playerHand, nonPlayerHands)
 		switch (player) {
 			case 0: {
@@ -356,22 +356,32 @@ export default function Game() {
 	// Game Logic
 	useLayoutEffect(() => {
 		switch (matchStage) {
+			case "PREGAME": {
+				console.log("------------------ PREGAME Stage")
+				break
+			}
 			case "NEWGAME": {
+				console.log("------------------ NEWGAME Stage")
+				console.log("%cPlayer Hand", "color: green", playerHand)
+				console.log("%cNon-Player Hands", "color: green", nonPlayerHands)
 				if (upTrump.faceValue === undefined) sleep(500).then(() => setTurnCount(turnCount - 1))
 				else {
 					setMatchStage("CALL")
 					setTurnCount(0)
 				}
-				console.log(nonPlayerHands)
 				break
 			}
 			case "NEWMATCH": {
 				console.log("------------------ NEWMATCH Stage")
-				console.log(nonPlayerHands)
+				console.log(`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`, upTrump)
+				console.log("%cPlayer Hand", "color: green", playerHand)
+				console.log("%cNon-Player Hands", "color: green", nonPlayerHands)
 				break
 			}
 			case "CALL": {
 				console.log("------------------ Call Stage")
+				console.log(`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`, upTrump)
+
 				turnCount === 0 && setCurrentPlayer((dealer + 1) % 4)
 				if (upTrump.faceValue === undefined) {
 					sleep(750).then(() => setTurnCount(turnCount - 1))
@@ -400,6 +410,7 @@ export default function Game() {
 			}
 			case "PICK": {
 				console.log("------------------ Pick Stage")
+				console.log(`Current Player: ${currentPlayer}\nturnCount: ${turnCount}\nDealer: ${dealer}`)
 				trumpCardOpacity === "opacity-100" && setTrumpCardOpacity("opacity-0")
 				if (turnCount > 2) {
 					setMatchStage("STUCK")
@@ -416,7 +427,8 @@ export default function Game() {
 				break
 			}
 			case "STUCK": {
-				console.log("------------------ STUCK Stage", dealer)
+				console.log("------------------ STUCK Stage")
+				console.log(`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`, upTrump)
 				if (dealer === yourSeat) {
 					setPromptText(prompts.trump2Stuck) // STUCK TO DEALER YOU
 				} else {
@@ -433,8 +445,8 @@ export default function Game() {
 				break
 			}
 			case "DISCARD": {
-				// USER DISCARD NOT COMPUTER
 				console.log("------------------ DISCARD Stage")
+				console.log(`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`, upTrump)
 				if (yourSeat === dealer) setPromptText(prompts.discard)
 				else handleDiscard(dealer, upTrump)
 				break
@@ -500,7 +512,6 @@ export default function Game() {
 		}
 	}, [turnCount]);
 
-	console.log("LOG: (stage, dealer, currPlay, turnCt, upTrmp, trump)", matchStage, dealer, currentPlayer, turnCount, upTrump, trump)
 
 	////////////
 	// RENDER //
