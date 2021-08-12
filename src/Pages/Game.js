@@ -342,7 +342,7 @@ export default function Game() {
 	};
 
 	const handlePlayerChoice = (player, card) => {
-		console.log("handlePlayerChoice", player, card);
+		// console.log("handlePlayerChoice", player, card);
 		if (!matchSuit) {
 			if (trump.left.code === card.suit.code && card.faceValue === "J")
 				setMatchSuit(trump.code);
@@ -354,7 +354,7 @@ export default function Game() {
 	};
 
 	const handleDiscard = (player, card) => {
-		console.log("------------------HANDLE DISCARD FUNCTION", player, card);
+		// console.log("------------------HANDLE DISCARD FUNCTION", player, card);
 		const hand = getPlayerHand(player, playerHand, nonPlayerHands);
 		switch (player) {
 			case 0: {
@@ -461,7 +461,7 @@ export default function Game() {
 
 	// Game Setup
 	useEffect(() => {
-		console.log("New Deal: Getting Deck and setting up hands");
+		// console.log("New Deal: Getting Deck and setting up hands");
 		getDeck();
 	}, [dealer]);
 
@@ -469,13 +469,13 @@ export default function Game() {
 	useEffect(() => {
 		switch (matchStage) {
 			case "PREGAME": {
-				console.log("------------------ PREGAME Stage");
+				// console.log("------------------ PREGAME Stage");
 				break;
 			}
 			case "NEWGAME": {
-				console.log("------------------ NEWGAME Stage");
-				console.log("%cPlayer Hand", "color: green", playerHand);
-				console.log("%cNon-Player Hands", "color: green", nonPlayerHands);
+				// console.log("------------------ NEWGAME Stage");
+				// console.log("%cPlayer Hand", "color: green", playerHand);
+				// console.log("%cNon-Player Hands", "color: green", nonPlayerHands);
 				if (upTrump.faceValue === undefined)
 					sleep(500).then(() => setTurnCount(turnCount - 1));
 				else {
@@ -485,18 +485,18 @@ export default function Game() {
 				break;
 			}
 			case "NEWMATCH": {
-				console.log("------------------ NEWMATCH Stage");
-				console.log(
+				// console.log("------------------ NEWMATCH Stage");
+				// console.log(
 					`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`,
 					upTrump
 				);
-				console.log("%cPlayer Hand", "color: green", playerHand);
-				console.log("%cNon-Player Hands", "color: green", nonPlayerHands);
+				// console.log("%cPlayer Hand", "color: green", playerHand);
+				// console.log("%cNon-Player Hands", "color: green", nonPlayerHands);
 				break;
 			}
 			case "CALL": {
-				console.log("------------------ Call Stage");
-				console.log(
+				// console.log("------------------ Call Stage");
+				// console.log(
 					`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`,
 					upTrump
 				);
@@ -541,8 +541,8 @@ export default function Game() {
 				break;
 			}
 			case "PICK": {
-				console.log("------------------ Pick Stage");
-				console.log(
+				// console.log("------------------ Pick Stage");
+				// console.log(
 					`Current Player: ${currentPlayer}\nturnCount: ${turnCount}\nDealer: ${dealer}`
 				);
 				trumpCardOpacity === "opacity-100" && setTrumpCardOpacity("opacity-0");
@@ -572,8 +572,8 @@ export default function Game() {
 				break;
 			}
 			case "STUCK": {
-				console.log("------------------ STUCK Stage");
-				console.log(
+				// console.log("------------------ STUCK Stage");
+				// console.log(
 					`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`,
 					upTrump
 				);
@@ -597,15 +597,15 @@ export default function Game() {
 				break;
 			}
 			case "READY": {
-				console.log("------------------ READY Stage");
+				// console.log("------------------ READY Stage");
 				setTrumpStackOpacity("opacity-0");
 				setTrumpCardPosition("translate-y-0 -translate-y-0 translate-x-0 -translate-x-0");
 				!goAlone ? setPromptText(prompts.ready) : setPromptText(prompts.goAlone);
 				break;
 			}
 			case "DISCARD": {
-				console.log("------------------ DISCARD Stage");
-				console.log(
+				// console.log("------------------ DISCARD Stage");
+				// console.log(
 					`Current Player: ${currentPlayer} \nturnCount: ${turnCount} \nDealer: ${dealer}`,
 					upTrump
 				);
@@ -615,7 +615,7 @@ export default function Game() {
 			}
 			case "PLAY": {
 				// MATCH PLAY
-				console.log("------------------ Play Stage");
+				// console.log("------------------ Play Stage");
 				if (goAlone !== null && currentPlayer === (goAlone + 2) % 4) {
 					setCurrentPlayer((currentPlayer + 1) % 4);
 					setTurnCount(turnCount + 1);
@@ -666,14 +666,14 @@ export default function Game() {
 			}
 			case "RESULT": {
 				// END OF TRICK OR END OF MATCH
-				console.log("------------------ RESULT Stage");
+				// console.log("------------------ RESULT Stage");
 				if (teamScore >= 10 || opponentScore >= 10) {
 					setMatchStage("GAMEOVER");
 					setTurnCount(100);
 					break;
 				}
 				if (matchTricks.opposingTeam + matchTricks.callingTeam === 5) {
-					console.log("------------------ RESULT Stage: 5 tricks done - scorematch");
+					// console.log("------------------ RESULT Stage: 5 tricks done - scorematch");
 					scoreMatch();
 				} else {
 					setCurrentPlayer(currentMatchScore.winner);
@@ -684,12 +684,12 @@ export default function Game() {
 			}
 			case "GAMEOVER": {
 				// WIN CONDITION MET
-				console.log("------------------ GAMEOVER Stage");
+				// console.log("------------------ GAMEOVER Stage");
 				// Setup a reset for another game
 				break;
 			}
 			default:
-				console.log("------------------ Default Stage");
+				// console.log("------------------ Default Stage");
 		}
 	}, [turnCount]);
 

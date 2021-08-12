@@ -8,7 +8,7 @@ export default function Card() {
 	const [enableSelection, setEnableSelection] = useState("pointer-events-none")
 
 	const handleClick = () => {
-		console.log(`You ordered up ${upTrump.faceValue} of ${upTrump.suit.name} as trump`)
+		// console.log(`You ordered up ${upTrump.faceValue} of ${upTrump.suit.name} as trump`)
 		suits[upTrump.suit.code].select()
 	}
 
